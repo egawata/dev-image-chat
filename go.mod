@@ -1,4 +1,4 @@
-module github.com/egawata/claudecode-image-chat
+module github.com/egawata/dev-image-chat
 
 go 1.24.0
 

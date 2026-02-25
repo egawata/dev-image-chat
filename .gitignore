@@ -1,5 +1,5 @@
 # Build binary
-claudecode-image-chat
+dev-image-chat
 
 # Environment variables
 .env
