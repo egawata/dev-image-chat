@@ -70,10 +70,10 @@ func (ig *ImageGenerator) Generate(prompt string) (string, error) {
 	reqBody := txt2imgRequest{
 		Prompt:         fullPrompt,
 		NegativePrompt: negativePrompt,
-		Steps:          20,
+		Steps:          28,
 		Width:          512,
-		Height:         512,
-		CfgScale:       7,
+		Height:         768,
+		CfgScale:       5,
 		SamplerName:    "Euler a",
 	}
 
