@@ -2,15 +2,16 @@
 
 Claude Code での会話内容に合わせて、リアルタイムにキャラクター画像を自動生成し、ブラウザに表示するツールです。
 
-Claude Code の Assistant が応答するたびに、会話の内容を読み取り、Gemini API で画像生成プロンプトを作成、Stable Diffusion で画像を生成してブラウザに配信します。
+Claude Code の Assistant が応答するたびに、会話の内容を読み取り、Gemini API で画像生成プロンプトを作成、画像生成バックエンド（Stable Diffusion または Gemini）で画像を生成してブラウザに配信します。
 
 ## 必要なもの
 
 - **Go 1.24 以上**
-- **Stable Diffusion WebUI** (AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など)
-  - `--api` オプション付きで起動し、API が有効になっていること
 - **Google Gemini API キー**
   - [Google AI Studio](https://aistudio.google.com/apikey) から取得できます
+- **画像生成バックエンド**（以下のいずれか）
+  - **Gemini** — Gemini API キーがあればすぐに使えます（追加セットアップ不要）
+  - **Stable Diffusion WebUI** — AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など。`--api` オプション付きで起動し、API が有効になっていること
 
 ## インストール
 
@@ -66,7 +67,20 @@ GEMINI_API_KEY=your-api-key-here
 
 ## 起動方法
 
-### 1. Stable Diffusion WebUI を起動
+### Gemini バックエンドの場合
+
+`.env` に以下を設定するだけで、すぐに使えます。
+
+```
+GEMINI_API_KEY=your-api-key-here
+IMAGE_GENERATOR=gemini
+```
+
+```bash
+./dev-image-chat
+```
+
+### Stable Diffusion バックエンドの場合
 
 まず Stable Diffusion WebUI を API 有効の状態で起動してください。
 
@@ -77,11 +91,13 @@ GEMINI_API_KEY=your-api-key-here
 
 デフォルトで `http://localhost:7860` で起動します。
 
-### 2. dev-image-chat を起動
+`.env` の `IMAGE_GENERATOR` はデフォルトで `sd` なので、そのまま起動できます。
 
 ```bash
 ./dev-image-chat
 ```
+
+### 起動確認
 
 以下のようなログが出れば起動成功です。
 
@@ -92,7 +108,7 @@ Claude Code Image Chat started
   Generate interval: 1m0s
 ```
 
-### 3. ブラウザで Web UI を開く
+### ブラウザで Web UI を開く
 
 `http://localhost:8080` にアクセスすると、画像表示画面が開きます。
 
@@ -112,7 +128,9 @@ Claude Code Image Chat started
 
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
-| `GEMINI_MODEL` | `gemini-2.5-flash` | 使用する Gemini モデル |
+| `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル |
+| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `SERVER_PORT` | `8080` | Web UI のポート番号 |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
@@ -120,7 +138,9 @@ Claude Code Image Chat started
 | `GENERATE_INTERVAL` | `60` | 画像生成の最小間隔（秒） |
 | `DEBUG` | `false` | デバッグログの有効化（`1` or `true`） |
 
-### 画像生成パラメータ
+### Stable Diffusion 画像生成パラメータ
+
+`IMAGE_GENERATOR=sd`（デフォルト）のときに有効です。
 
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
@@ -156,9 +176,9 @@ CHARACTER_FILE=character.md
 
 ### 画像が生成されない
 
-- Stable Diffusion WebUI が `--api` オプション付きで起動しているか確認してください。
-- `SD_BASE_URL` が正しいか確認してください（デフォルト: `http://localhost:7860`）。
 - `DEBUG=1` で起動して詳細ログを確認してください。
+- **Stable Diffusion の場合**: WebUI が `--api` オプション付きで起動しているか、`SD_BASE_URL` が正しいか確認してください。
+- **Gemini の場合**: `IMAGE_GENERATOR=gemini` が設定されているか、`GEMINI_API_KEY` が正しいか確認してください。
 
 ### ブラウザに画像が表示されない
 
