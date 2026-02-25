@@ -24,7 +24,11 @@ type Config struct {
 	CharacterSetting   string
 	Debug              bool
 
-	// Image generation parameters
+	// Image generator selection: "sd" or "gemini"
+	ImageGeneratorType string
+	GeminiImageModel   string
+
+	// Stable Diffusion image generation parameters
 	SDSteps       int
 	SDWidth       int
 	SDHeight      int
@@ -122,6 +126,19 @@ func LoadConfig() (*Config, error) {
 
 	sdExtraPrompt := os.Getenv("IMGCHAT_SD_EXTRA_PROMPT")
 
+	imageGeneratorType := strings.ToLower(os.Getenv("IMAGE_GENERATOR"))
+	if imageGeneratorType == "" {
+		imageGeneratorType = "sd"
+	}
+	if imageGeneratorType != "sd" && imageGeneratorType != "gemini" {
+		return nil, fmt.Errorf("IMAGE_GENERATOR must be \"sd\" or \"gemini\", got %q", imageGeneratorType)
+	}
+
+	geminiImageModel := os.Getenv("GEMINI_IMAGE_MODEL")
+	if geminiImageModel == "" {
+		geminiImageModel = "gemini-2.5-flash-image"
+	}
+
 	generateInterval := 60 * time.Second
 	if v := os.Getenv("GENERATE_INTERVAL"); v != "" {
 		if sec, err := strconv.Atoi(v); err == nil && sec > 0 {
@@ -142,6 +159,8 @@ func LoadConfig() (*Config, error) {
 		RecentMessages:     10,
 		CharacterSetting:   characterSetting,
 		Debug:              debug,
+		ImageGeneratorType: imageGeneratorType,
+		GeminiImageModel:   geminiImageModel,
 		SDSteps:            sdSteps,
 		SDWidth:            sdWidth,
 		SDHeight:           sdHeight,

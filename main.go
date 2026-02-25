@@ -24,16 +24,26 @@ func main() {
 		log.Fatalf("prompt generator error: %v", err)
 	}
 
-	imageGen, err := NewImageGenerator(ImageGeneratorConfig{
-		BaseURL:     cfg.SDBaseURL,
-		OutputDir:   imageDir,
-		Steps:       cfg.SDSteps,
-		Width:       cfg.SDWidth,
-		Height:      cfg.SDHeight,
-		CfgScale:    cfg.SDCfgScale,
-		SamplerName: cfg.SDSamplerName,
-		ExtraPrompt: cfg.SDExtraPrompt,
-	})
+	var imageGen ImageGenerator
+	switch cfg.ImageGeneratorType {
+	case "gemini":
+		imageGen, err = NewGeminiImageGenerator(GeminiImageGeneratorConfig{
+			APIKey:    cfg.GeminiAPIKey,
+			Model:     cfg.GeminiImageModel,
+			OutputDir: imageDir,
+		})
+	default:
+		imageGen, err = NewSDImageGenerator(SDImageGeneratorConfig{
+			BaseURL:     cfg.SDBaseURL,
+			OutputDir:   imageDir,
+			Steps:       cfg.SDSteps,
+			Width:       cfg.SDWidth,
+			Height:      cfg.SDHeight,
+			CfgScale:    cfg.SDCfgScale,
+			SamplerName: cfg.SDSamplerName,
+			ExtraPrompt: cfg.SDExtraPrompt,
+		})
+	}
 	if err != nil {
 		log.Fatalf("image generator error: %v", err)
 	}
