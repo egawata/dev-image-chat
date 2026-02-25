@@ -17,6 +17,7 @@ assistant message.
 
 Rules:
 - Output ONLY the image prompt, nothing else.
+- The entire output MUST be in English only. Do NOT include any non-English characters, words, or text (no Japanese, Chinese, Korean, etc.). Even for in-scene text like signs, speech bubbles, or whiteboards, describe them in English or omit them.
 - The prompt should describe a single anime girl character reacting to or representing
   the situation in the conversation.
 - Include emotional expressions, poses, and background elements that match the context.
