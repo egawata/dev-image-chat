@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,6 +27,7 @@ type ImageGenerator struct {
 	height      int
 	cfgScale    float64
 	samplerName string
+	extraPrompt string
 	mu          sync.Mutex
 	generating  bool
 }
@@ -52,6 +54,7 @@ type ImageGeneratorConfig struct {
 	Height      int
 	CfgScale    float64
 	SamplerName string
+	ExtraPrompt string
 }
 
 func NewImageGenerator(igCfg ImageGeneratorConfig) (*ImageGenerator, error) {
@@ -67,6 +70,7 @@ func NewImageGenerator(igCfg ImageGeneratorConfig) (*ImageGenerator, error) {
 		height:      igCfg.Height,
 		cfgScale:    igCfg.CfgScale,
 		samplerName: igCfg.SamplerName,
+		extraPrompt: igCfg.ExtraPrompt,
 	}, nil
 }
 
@@ -89,7 +93,14 @@ func (ig *ImageGenerator) Generate(prompt string) (string, error) {
 		ig.mu.Unlock()
 	}()
 
-	fullPrompt := prompt + ", masterpiece, best quality, anime style, 1girl"
+	fullPrompt := prompt
+	if ig.extraPrompt != "" {
+		trimmed := strings.TrimRight(fullPrompt, " ")
+		if !strings.HasSuffix(trimmed, ",") {
+			fullPrompt = trimmed + ", "
+		}
+		fullPrompt += ig.extraPrompt
+	}
 	negativePrompt := "lowres, bad anatomy, bad hands, text, error, ugly, duplicate, deformed, blurry, realistic, photo"
 
 	reqBody := txt2imgRequest{

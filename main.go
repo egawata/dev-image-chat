@@ -32,6 +32,7 @@ func main() {
 		Height:      cfg.SDHeight,
 		CfgScale:    cfg.SDCfgScale,
 		SamplerName: cfg.SDSamplerName,
+		ExtraPrompt: cfg.SDExtraPrompt,
 	})
 	if err != nil {
 		log.Fatalf("image generator error: %v", err)

@@ -30,6 +30,7 @@ type Config struct {
 	SDHeight      int
 	SDCfgScale    float64
 	SDSamplerName string
+	SDExtraPrompt string
 }
 
 func LoadConfig() (*Config, error) {
@@ -119,6 +120,8 @@ func LoadConfig() (*Config, error) {
 		sdSamplerName = v
 	}
 
+	sdExtraPrompt := os.Getenv("IMGCHAT_SD_EXTRA_PROMPT")
+
 	generateInterval := 60 * time.Second
 	if v := os.Getenv("GENERATE_INTERVAL"); v != "" {
 		if sec, err := strconv.Atoi(v); err == nil && sec > 0 {
@@ -144,5 +147,6 @@ func LoadConfig() (*Config, error) {
 		SDHeight:           sdHeight,
 		SDCfgScale:         sdCfgScale,
 		SDSamplerName:      sdSamplerName,
+		SDExtraPrompt:      sdExtraPrompt,
 	}, nil
 }
