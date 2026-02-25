@@ -4,5 +4,8 @@ claudecode-image-chat
 # Environment variables
 .env
 
+# Character setting
+character.md
+
 # Generated images
 generated_images/

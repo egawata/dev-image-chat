@@ -2,21 +2,24 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	GeminiAPIKey     string
-	GeminiModel      string
-	SDBaseURL        string
-	ServerPort       string
-	ClaudeProjectDir string
-	DebounceInterval time.Duration
-	RecentMessages   int
+	GeminiAPIKey       string
+	GeminiModel        string
+	SDBaseURL          string
+	ServerPort         string
+	ClaudeProjectDir   string
+	DebounceInterval   time.Duration
+	RecentMessages     int
+	CharacterSetting   string
 }
 
 func LoadConfig() (*Config, error) {
@@ -52,13 +55,25 @@ func LoadConfig() (*Config, error) {
 		claudeDir = filepath.Join(home, ".claude", "projects")
 	}
 
+	characterSetting := ""
+	characterFile := os.Getenv("CHARACTER_FILE")
+	if characterFile != "" {
+		data, err := os.ReadFile(characterFile)
+		if err != nil {
+			log.Printf("warning: could not read CHARACTER_FILE %q: %v", characterFile, err)
+		} else {
+			characterSetting = strings.TrimSpace(string(data))
+		}
+	}
+
 	return &Config{
-		GeminiAPIKey:     apiKey,
-		GeminiModel:      geminiModel,
-		SDBaseURL:        sdBaseURL,
-		ServerPort:       serverPort,
-		ClaudeProjectDir: claudeDir,
-		DebounceInterval: 3 * time.Second,
-		RecentMessages:   10,
+		GeminiAPIKey:       apiKey,
+		GeminiModel:        geminiModel,
+		SDBaseURL:          sdBaseURL,
+		ServerPort:         serverPort,
+		ClaudeProjectDir:   claudeDir,
+		DebounceInterval:   3 * time.Second,
+		RecentMessages:     10,
+		CharacterSetting:   characterSetting,
 	}, nil
 }

@@ -9,7 +9,7 @@ import (
 	"google.golang.org/genai"
 )
 
-const systemPrompt = `You are an image prompt generator for an anime-style illustration AI.
+const baseSystemPrompt = `You are an image prompt generator for an anime-style illustration AI.
 Given a conversation between a user and an AI assistant, generate a short English prompt
 describing an anime-style illustration that captures the mood and situation of the latest
 assistant message.
@@ -23,11 +23,12 @@ Rules:
 - Do NOT include any negative prompts or technical parameters.`
 
 type PromptGenerator struct {
-	client *genai.Client
-	model  string
+	client       *genai.Client
+	model        string
+	systemPrompt string
 }
 
-func NewPromptGenerator(apiKey, model string) (*PromptGenerator, error) {
+func NewPromptGenerator(apiKey, model, characterSetting string) (*PromptGenerator, error) {
 	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -36,9 +37,15 @@ func NewPromptGenerator(apiKey, model string) (*PromptGenerator, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
+	sp := baseSystemPrompt
+	if characterSetting != "" {
+		sp += "\n\nCharacter setting:\n" + characterSetting
+	}
+
 	return &PromptGenerator{
-		client: client,
-		model:  model,
+		client:       client,
+		model:        model,
+		systemPrompt: sp,
 	}, nil
 }
 
@@ -51,7 +58,7 @@ func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message) (st
 	userPrompt := fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation.", string(convJSON))
 
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(pg.systemPrompt, genai.RoleUser),
 		Temperature:       genai.Ptr(float32(0.8)),
 		MaxOutputTokens:   300,
 	})

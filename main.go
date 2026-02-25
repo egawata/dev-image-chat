@@ -18,7 +18,7 @@ func main() {
 
 	imageDir := filepath.Join(".", "generated_images")
 
-	promptGen, err := NewPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel)
+	promptGen, err := NewPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSetting)
 	if err != nil {
 		log.Fatalf("prompt generator error: %v", err)
 	}
