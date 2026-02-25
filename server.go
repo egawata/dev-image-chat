@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -17,17 +19,19 @@ var upgrader = websocket.Upgrader{
 }
 
 type Server struct {
-	port      string
-	imageDir  string
-	clients   map[*websocket.Conn]struct{}
-	mu        sync.RWMutex
+	port     string
+	imageDir string
+	clients  map[*websocket.Conn]struct{}
+	mu       sync.RWMutex
+	done     <-chan struct{}
 }
 
-func NewServer(port, imageDir string) *Server {
+func NewServer(port, imageDir string, done <-chan struct{}) *Server {
 	return &Server{
 		port:     port,
 		imageDir: imageDir,
 		clients:  make(map[*websocket.Conn]struct{}),
+		done:     done,
 	}
 }
 
@@ -43,7 +47,8 @@ func (s *Server) Broadcast(filename string) {
 	}
 }
 
-// Start begins serving HTTP and WebSocket connections. It blocks.
+// Start begins serving HTTP and WebSocket connections. It blocks until
+// the done channel is closed, then gracefully shuts down the HTTP server.
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
@@ -68,8 +73,26 @@ func (s *Server) Start() error {
 	// WebSocket endpoint
 	mux.HandleFunc("/ws", s.handleWS)
 
+	httpServer := &http.Server{
+		Addr:    ":" + s.port,
+		Handler: mux,
+	}
+
+	// Shut down the HTTP server when done is closed.
+	go func() {
+		<-s.done
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Printf("http server shutdown error: %v", err)
+		}
+	}()
+
 	log.Printf("server listening on :%s", s.port)
-	return http.ListenAndServe(":"+s.port, mux)
+	if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +115,12 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 		conn.Close()
 		log.Printf("WebSocket client disconnected (total: %d)", len(s.clients))
+	}()
+
+	// Close the connection when done is signaled so ReadMessage unblocks.
+	go func() {
+		<-s.done
+		conn.Close()
 	}()
 
 	for {

@@ -28,15 +28,15 @@ func main() {
 		log.Fatalf("image generator error: %v", err)
 	}
 
-	srv := NewServer(cfg.ServerPort, imageDir)
+	done := make(chan struct{})
+
+	srv := NewServer(cfg.ServerPort, imageDir, done)
 
 	watcher := NewWatcher(cfg.ClaudeProjectDir, cfg.DebounceInterval)
 
 	// Channels for the pipeline
 	promptCh := make(chan string, 4)
 	imageCh := make(chan string, 4)
-
-	done := make(chan struct{})
 
 	// Handle shutdown signals
 	sigCh := make(chan os.Signal, 1)
