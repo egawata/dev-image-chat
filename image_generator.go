@@ -10,13 +10,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
 
+const defaultMaxImages = 30
+
 type ImageGenerator struct {
 	baseURL    string
 	outputDir  string
+	maxImages  int
 	mu         sync.Mutex
 	generating bool
 }
@@ -42,6 +46,7 @@ func NewImageGenerator(baseURL, outputDir string) (*ImageGenerator, error) {
 	return &ImageGenerator{
 		baseURL:   baseURL,
 		outputDir: outputDir,
+		maxImages: defaultMaxImages,
 	}, nil
 }
 
@@ -116,5 +121,54 @@ func (ig *ImageGenerator) Generate(prompt string) (string, error) {
 	}
 
 	log.Printf("image saved: %s", filePath)
+
+	ig.cleanupOldImages()
+
 	return filename, nil
+}
+
+// cleanupOldImages removes the oldest images when the number of images exceeds maxImages.
+func (ig *ImageGenerator) cleanupOldImages() {
+	entries, err := os.ReadDir(ig.outputDir)
+	if err != nil {
+		log.Printf("cleanup: failed to read directory: %v", err)
+		return
+	}
+
+	// Collect only regular .png files
+	type fileWithTime struct {
+		name    string
+		modTime time.Time
+	}
+	var files []fileWithTime
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".png" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		files = append(files, fileWithTime{name: e.Name(), modTime: info.ModTime()})
+	}
+
+	if len(files) <= ig.maxImages {
+		return
+	}
+
+	// Sort by modification time ascending (oldest first)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].modTime.Before(files[j].modTime)
+	})
+
+	toDelete := len(files) - ig.maxImages
+	for i := 0; i < toDelete; i++ {
+		path := filepath.Join(ig.outputDir, files[i].name)
+		if err := os.Remove(path); err != nil {
+			log.Printf("cleanup: failed to remove %s: %v", path, err)
+		} else {
+			log.Printf("cleanup: removed old image %s", files[i].name)
+		}
+	}
+	log.Printf("cleanup: removed %d old image(s), keeping %d", toDelete, ig.maxImages)
 }
