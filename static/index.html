@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Image Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        #container {
+            text-align: center;
+            position: relative;
+        }
+        #status {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        #status.connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: #81c784;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        #status.disconnected {
+            background: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        #image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        #current-image {
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.5s ease-in-out;
+        }
+        #placeholder {
+            color: #666;
+            font-size: 18px;
+        }
+        #placeholder .emoji {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="status" class="disconnected">Disconnected</div>
+    <div id="container">
+        <div id="placeholder">
+            <span class="emoji">🎨</span>
+            Waiting for conversation...
+        </div>
+        <div id="image-wrapper" style="display:none;">
+            <img id="current-image" src="" alt="Generated image">
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const placeholder = document.getElementById('placeholder');
+        const imageWrapper = document.getElementById('image-wrapper');
+        const currentImage = document.getElementById('current-image');
+
+        let ws;
+        let reconnectTimer;
+
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+            ws.onopen = () => {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'connected';
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const filename = event.data;
+                const imageUrl = `/images/${filename}`;
+
+                // Fade out, swap, fade in
+                currentImage.style.opacity = '0';
+                setTimeout(() => {
+                    currentImage.src = imageUrl;
+                    currentImage.onload = () => {
+                        placeholder.style.display = 'none';
+                        imageWrapper.style.display = 'inline-block';
+                        currentImage.style.opacity = '1';
+                    };
+                }, 300);
+            };
+
+            ws.onclose = () => {
+                statusEl.textContent = 'Disconnected - Reconnecting...';
+                statusEl.className = 'disconnected';
+                scheduleReconnect();
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+
+        function scheduleReconnect() {
+            if (!reconnectTimer) {
+                reconnectTimer = setTimeout(() => {
+                    reconnectTimer = null;
+                    connect();
+                }, 3000);
+            }
+        }
+
+        connect();
+    </script>
+</body>
+</html>
