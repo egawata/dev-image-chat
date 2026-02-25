@@ -18,11 +18,16 @@ import (
 const defaultMaxImages = 30
 
 type ImageGenerator struct {
-	baseURL    string
-	outputDir  string
-	maxImages  int
-	mu         sync.Mutex
-	generating bool
+	baseURL     string
+	outputDir   string
+	maxImages   int
+	steps       int
+	width       int
+	height      int
+	cfgScale    float64
+	samplerName string
+	mu          sync.Mutex
+	generating  bool
 }
 
 type txt2imgRequest struct {
@@ -39,14 +44,29 @@ type txt2imgResponse struct {
 	Images []string `json:"images"`
 }
 
-func NewImageGenerator(baseURL, outputDir string) (*ImageGenerator, error) {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+type ImageGeneratorConfig struct {
+	BaseURL     string
+	OutputDir   string
+	Steps       int
+	Width       int
+	Height      int
+	CfgScale    float64
+	SamplerName string
+}
+
+func NewImageGenerator(igCfg ImageGeneratorConfig) (*ImageGenerator, error) {
+	if err := os.MkdirAll(igCfg.OutputDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 	return &ImageGenerator{
-		baseURL:   baseURL,
-		outputDir: outputDir,
-		maxImages: defaultMaxImages,
+		baseURL:     igCfg.BaseURL,
+		outputDir:   igCfg.OutputDir,
+		maxImages:   defaultMaxImages,
+		steps:       igCfg.Steps,
+		width:       igCfg.Width,
+		height:      igCfg.Height,
+		cfgScale:    igCfg.CfgScale,
+		samplerName: igCfg.SamplerName,
 	}, nil
 }
 
@@ -75,11 +95,11 @@ func (ig *ImageGenerator) Generate(prompt string) (string, error) {
 	reqBody := txt2imgRequest{
 		Prompt:         fullPrompt,
 		NegativePrompt: negativePrompt,
-		Steps:          28,
-		Width:          512,
-		Height:         768,
-		CfgScale:       5,
-		SamplerName:    "Euler a",
+		Steps:          ig.steps,
+		Width:          ig.width,
+		Height:         ig.height,
+		CfgScale:       ig.cfgScale,
+		SamplerName:    ig.samplerName,
 	}
 
 	jsonData, err := json.Marshal(reqBody)

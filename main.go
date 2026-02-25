@@ -24,7 +24,15 @@ func main() {
 		log.Fatalf("prompt generator error: %v", err)
 	}
 
-	imageGen, err := NewImageGenerator(cfg.SDBaseURL, imageDir)
+	imageGen, err := NewImageGenerator(ImageGeneratorConfig{
+		BaseURL:     cfg.SDBaseURL,
+		OutputDir:   imageDir,
+		Steps:       cfg.SDSteps,
+		Width:       cfg.SDWidth,
+		Height:      cfg.SDHeight,
+		CfgScale:    cfg.SDCfgScale,
+		SamplerName: cfg.SDSamplerName,
+	})
 	if err != nil {
 		log.Fatalf("image generator error: %v", err)
 	}

@@ -23,6 +23,13 @@ type Config struct {
 	RecentMessages     int
 	CharacterSetting   string
 	Debug              bool
+
+	// Image generation parameters
+	SDSteps       int
+	SDWidth       int
+	SDHeight      int
+	SDCfgScale    float64
+	SDSamplerName string
 }
 
 func LoadConfig() (*Config, error) {
@@ -71,6 +78,47 @@ func LoadConfig() (*Config, error) {
 
 	debug := os.Getenv("DEBUG") == "1" || os.Getenv("DEBUG") == "true"
 
+	sdSteps := 28
+	if v := os.Getenv("IMGCHAT_SD_STEPS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			sdSteps = n
+		} else {
+			log.Printf("warning: invalid IMGCHAT_SD_STEPS %q, using default %d", v, sdSteps)
+		}
+	}
+
+	sdWidth := 512
+	if v := os.Getenv("IMGCHAT_SD_WIDTH"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			sdWidth = n
+		} else {
+			log.Printf("warning: invalid IMGCHAT_SD_WIDTH %q, using default %d", v, sdWidth)
+		}
+	}
+
+	sdHeight := 768
+	if v := os.Getenv("IMGCHAT_SD_HEIGHT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			sdHeight = n
+		} else {
+			log.Printf("warning: invalid IMGCHAT_SD_HEIGHT %q, using default %d", v, sdHeight)
+		}
+	}
+
+	sdCfgScale := 5.0
+	if v := os.Getenv("IMGCHAT_SD_CFG_SCALE"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil && f > 0 {
+			sdCfgScale = f
+		} else {
+			log.Printf("warning: invalid IMGCHAT_SD_CFG_SCALE %q, using default %.1f", v, sdCfgScale)
+		}
+	}
+
+	sdSamplerName := "Euler a"
+	if v := os.Getenv("IMGCHAT_SD_SAMPLER_NAME"); v != "" {
+		sdSamplerName = v
+	}
+
 	generateInterval := 60 * time.Second
 	if v := os.Getenv("GENERATE_INTERVAL"); v != "" {
 		if sec, err := strconv.Atoi(v); err == nil && sec > 0 {
@@ -91,5 +139,10 @@ func LoadConfig() (*Config, error) {
 		RecentMessages:     10,
 		CharacterSetting:   characterSetting,
 		Debug:              debug,
+		SDSteps:            sdSteps,
+		SDWidth:            sdWidth,
+		SDHeight:           sdHeight,
+		SDCfgScale:         sdCfgScale,
+		SDSamplerName:      sdSamplerName,
 	}, nil
 }
