@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -18,6 +20,9 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
+	// .env file is optional; environment variables take precedence
+	_ = godotenv.Load()
+
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")

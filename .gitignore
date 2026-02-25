@@ -1,5 +1,8 @@
 # Build binary
 claudecode-image-chat
 
+# Environment variables
+.env
+
 # Generated images
 generated_images/
