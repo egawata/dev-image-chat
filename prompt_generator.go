@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"google.golang.org/genai"
@@ -60,10 +61,17 @@ func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message) (st
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(pg.systemPrompt, genai.RoleUser),
 		Temperature:       genai.Ptr(float32(0.8)),
-		MaxOutputTokens:   300,
+		MaxOutputTokens:   1024,
 	})
 	if err != nil {
 		return "", fmt.Errorf("Gemini API error: %w", err)
+	}
+
+	if resp != nil && len(resp.Candidates) > 0 {
+		reason := resp.Candidates[0].FinishReason
+		if reason != genai.FinishReasonStop {
+			log.Printf("warning: Gemini finish reason: %s", reason)
+		}
 	}
 
 	text := extractTextFromResponse(resp)

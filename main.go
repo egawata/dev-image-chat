@@ -96,7 +96,7 @@ func main() {
 					continue
 				}
 
-				log.Printf("generated prompt: %s", prompt)
+				log.Printf("generated prompt (%d chars): %q", len(prompt), prompt)
 
 				select {
 				case promptCh <- prompt:
