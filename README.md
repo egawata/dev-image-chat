@@ -96,7 +96,7 @@ Claude Code Image Chat started
 
 `http://localhost:8080` にアクセスすると、画像表示画面が開きます。
 
-あとは普段通り Claude Code を使ってください。Assistant が応答するたびに、会話内容に合った画像が自動的に生成・表示されます。
+あとは普段通り Claude Code を使ってください。Assistant が応答するたびに、会話内容に合った画像が自動的に生成・表示されます。(デフォルトでは60秒のインターバルがあります)
 
 ## 設定項目
 
