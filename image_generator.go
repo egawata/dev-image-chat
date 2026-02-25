@@ -131,7 +131,7 @@ func (ig *ImageGenerator) Generate(prompt string) (string, error) {
 func (ig *ImageGenerator) cleanupOldImages() {
 	entries, err := os.ReadDir(ig.outputDir)
 	if err != nil {
-		log.Printf("cleanup: failed to read directory: %v", err)
+		Debugf("cleanup: failed to read directory: %v", err)
 		return
 	}
 
@@ -165,10 +165,10 @@ func (ig *ImageGenerator) cleanupOldImages() {
 	for i := 0; i < toDelete; i++ {
 		path := filepath.Join(ig.outputDir, files[i].name)
 		if err := os.Remove(path); err != nil {
-			log.Printf("cleanup: failed to remove %s: %v", path, err)
+			Debugf("cleanup: failed to remove %s: %v", path, err)
 		} else {
-			log.Printf("cleanup: removed old image %s", files[i].name)
+			Debugf("cleanup: removed old image %s", files[i].name)
 		}
 	}
-	log.Printf("cleanup: removed %d old image(s), keeping %d", toDelete, ig.maxImages)
+	Debugf("cleanup: removed %d old image(s), keeping %d", toDelete, ig.maxImages)
 }

@@ -20,6 +20,7 @@ type Config struct {
 	DebounceInterval   time.Duration
 	RecentMessages     int
 	CharacterSetting   string
+	Debug              bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -66,6 +67,8 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
+	debug := os.Getenv("DEBUG") == "1" || os.Getenv("DEBUG") == "true"
+
 	return &Config{
 		GeminiAPIKey:       apiKey,
 		GeminiModel:        geminiModel,
@@ -75,5 +78,6 @@ func LoadConfig() (*Config, error) {
 		DebounceInterval:   3 * time.Second,
 		RecentMessages:     10,
 		CharacterSetting:   characterSetting,
+		Debug:              debug,
 	}, nil
 }

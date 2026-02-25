@@ -28,6 +28,8 @@ func main() {
 		log.Fatalf("image generator error: %v", err)
 	}
 
+	InitLogger(cfg.Debug)
+
 	done := make(chan struct{})
 
 	srv := NewServer(cfg.ServerPort, imageDir, done)
@@ -96,7 +98,7 @@ func main() {
 					continue
 				}
 
-				log.Printf("generated prompt (%d chars): %q", len(prompt), prompt)
+				Debugf("generated prompt (%d chars): %q", len(prompt), prompt)
 
 				select {
 				case promptCh <- prompt:
@@ -151,7 +153,7 @@ func main() {
 				if !ok {
 					return
 				}
-				log.Printf("broadcasting new image: %s", filename)
+				Debugf("broadcasting new image: %s", filename)
 				srv.Broadcast(filename)
 			}
 		}
