@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ type Config struct {
 	ServerPort         string
 	ClaudeProjectDir   string
 	DebounceInterval   time.Duration
+	GenerateInterval   time.Duration
 	RecentMessages     int
 	CharacterSetting   string
 	Debug              bool
@@ -69,6 +71,15 @@ func LoadConfig() (*Config, error) {
 
 	debug := os.Getenv("DEBUG") == "1" || os.Getenv("DEBUG") == "true"
 
+	generateInterval := 60 * time.Second
+	if v := os.Getenv("GENERATE_INTERVAL"); v != "" {
+		if sec, err := strconv.Atoi(v); err == nil && sec > 0 {
+			generateInterval = time.Duration(sec) * time.Second
+		} else {
+			log.Printf("warning: invalid GENERATE_INTERVAL %q, using default 60s", v)
+		}
+	}
+
 	return &Config{
 		GeminiAPIKey:       apiKey,
 		GeminiModel:        geminiModel,
@@ -76,6 +87,7 @@ func LoadConfig() (*Config, error) {
 		ServerPort:         serverPort,
 		ClaudeProjectDir:   claudeDir,
 		DebounceInterval:   3 * time.Second,
+		GenerateInterval:   generateInterval,
 		RecentMessages:     10,
 		CharacterSetting:   characterSetting,
 		Debug:              debug,

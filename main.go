@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -57,6 +58,8 @@ func main() {
 
 	// Conversation parser + prompt generation goroutine
 	// Maintains per-file full message history for accurate context.
+	// Rate-limited: generates at most once per GenerateInterval, with a
+	// trailing-edge timer so the final message in a burst is always processed.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -65,10 +68,46 @@ func main() {
 		// Track full file content per path for re-parsing
 		fileData := make(map[string][]byte)
 
+		// Rate limiting state
+		var lastGenTime time.Time
+		var pendingRecent []Message
+		var deferredTimer *time.Timer
+		timerCh := make(chan struct{}, 1)
+
+		generatePrompt := func(recent []Message) {
+			ctx := context.Background()
+			prompt, err := promptGen.Generate(ctx, recent)
+			if err != nil {
+				log.Printf("prompt generation error: %v", err)
+				return
+			}
+
+			Debugf("generated prompt (%d chars): %q", len(prompt), prompt)
+
+			select {
+			case promptCh <- prompt:
+			case <-done:
+			}
+		}
+
 		for {
 			select {
 			case <-done:
+				if deferredTimer != nil {
+					deferredTimer.Stop()
+				}
 				return
+
+			case <-timerCh:
+				// Deferred timer fired — generate with the latest pending data
+				if pendingRecent != nil {
+					Debugf("deferred generation triggered")
+					lastGenTime = time.Now()
+					recent := pendingRecent
+					pendingRecent = nil
+					generatePrompt(recent)
+				}
+
 			case ev, ok := <-watcher.Events():
 				if !ok {
 					return
@@ -91,19 +130,32 @@ func main() {
 
 				recent := TailMessages(messages, cfg.RecentMessages)
 
-				ctx := context.Background()
-				prompt, err := promptGen.Generate(ctx, recent)
-				if err != nil {
-					log.Printf("prompt generation error: %v", err)
-					continue
-				}
-
-				Debugf("generated prompt (%d chars): %q", len(prompt), prompt)
-
-				select {
-				case promptCh <- prompt:
-				case <-done:
-					return
+				now := time.Now()
+				if now.Sub(lastGenTime) >= cfg.GenerateInterval {
+					// Enough time has passed — generate immediately
+					if deferredTimer != nil {
+						deferredTimer.Stop()
+						deferredTimer = nil
+					}
+					pendingRecent = nil
+					lastGenTime = now
+					Debugf("immediate generation (%.0fs since last)", now.Sub(lastGenTime).Seconds())
+					generatePrompt(recent)
+				} else {
+					// Too soon — defer to when the interval elapses
+					pendingRecent = make([]Message, len(recent))
+					copy(pendingRecent, recent)
+					if deferredTimer != nil {
+						deferredTimer.Stop()
+					}
+					remaining := cfg.GenerateInterval - now.Sub(lastGenTime)
+					Debugf("deferring generation (%.0fs remaining)", remaining.Seconds())
+					deferredTimer = time.AfterFunc(remaining, func() {
+						select {
+						case timerCh <- struct{}{}:
+						default:
+						}
+					})
 				}
 			}
 		}
@@ -171,6 +223,7 @@ func main() {
 	log.Printf("Claude Code Image Chat started")
 	log.Printf("  Web UI: http://localhost:%s", cfg.ServerPort)
 	log.Printf("  Watching: %s", cfg.ClaudeProjectDir)
+	log.Printf("  Generate interval: %s", cfg.GenerateInterval)
 
 	// Wait for shutdown signal
 	<-sigCh
