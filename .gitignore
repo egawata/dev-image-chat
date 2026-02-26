@@ -6,6 +6,7 @@ dev-image-chat
 
 # Character setting
 character.md
+characters/*.md
 
 # Generated images
 generated_images/

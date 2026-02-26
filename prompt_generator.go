@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"google.golang.org/genai"
@@ -25,12 +27,13 @@ Rules:
 - Do NOT include any negative prompts or technical parameters.`
 
 type PromptGenerator struct {
-	client       *genai.Client
-	model        string
-	systemPrompt string
+	client            *genai.Client
+	model             string
+	baseSystemPrompt  string
+	characterSettings []string
 }
 
-func NewPromptGenerator(apiKey, model, characterSetting string) (*PromptGenerator, error) {
+func NewPromptGenerator(apiKey, model string, characterSettings []string) (*PromptGenerator, error) {
 	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -39,19 +42,44 @@ func NewPromptGenerator(apiKey, model, characterSetting string) (*PromptGenerato
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	sp := baseSystemPrompt
-	if characterSetting != "" {
-		sp += "\n\nCharacter setting:\n" + characterSetting
-	}
-
 	return &PromptGenerator{
-		client:       client,
-		model:        model,
-		systemPrompt: sp,
+		client:            client,
+		model:             model,
+		baseSystemPrompt:  baseSystemPrompt,
+		characterSettings: characterSettings,
 	}, nil
 }
 
-func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message) (string, error) {
+// selectCharacterIndex returns the character index for a given session path
+// using FNV-1a hash of the session file basename.
+// Returns -1 if no character settings are available.
+func (pg *PromptGenerator) selectCharacterIndex(sessionPath string) int {
+	if len(pg.characterSettings) == 0 {
+		return -1
+	}
+	basename := filepath.Base(sessionPath)
+	h := fnv.New32a()
+	h.Write([]byte(basename))
+	return int(h.Sum32() % uint32(len(pg.characterSettings)))
+}
+
+// buildSystemPrompt constructs the full system prompt with character setting.
+func (pg *PromptGenerator) buildSystemPrompt(characterIndex int) string {
+	sp := pg.baseSystemPrompt
+	if characterIndex >= 0 && characterIndex < len(pg.characterSettings) {
+		sp += "\n\nCharacter setting:\n" + pg.characterSettings[characterIndex]
+	}
+	return sp
+}
+
+func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
+	charIdx := pg.selectCharacterIndex(sessionPath)
+	systemPrompt := pg.buildSystemPrompt(charIdx)
+
+	if charIdx >= 0 {
+		Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
+	}
+
 	convJSON, err := json.Marshal(messages)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal messages: %w", err)
@@ -60,7 +88,7 @@ func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message) (st
 	userPrompt := fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation.", string(convJSON))
 
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(pg.systemPrompt, genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
 		Temperature:       genai.Ptr(float32(0.8)),
 		MaxOutputTokens:   1024,
 	})

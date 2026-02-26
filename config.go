@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +22,8 @@ type Config struct {
 	DebounceInterval   time.Duration
 	GenerateInterval   time.Duration
 	RecentMessages     int
-	CharacterSetting   string
+	CharactersDir      string
+	CharacterSettings  []string
 	Debug              bool
 
 	// Image generator selection: "sd" or "gemini"
@@ -71,14 +73,29 @@ func LoadConfig() (*Config, error) {
 		claudeDir = filepath.Join(home, ".claude", "projects")
 	}
 
-	characterSetting := ""
-	characterFile := os.Getenv("CHARACTER_FILE")
-	if characterFile != "" {
-		data, err := os.ReadFile(characterFile)
-		if err != nil {
-			log.Printf("warning: could not read CHARACTER_FILE %q: %v", characterFile, err)
-		} else {
-			characterSetting = strings.TrimSpace(string(data))
+	charactersDir := os.Getenv("CHARACTERS_DIR")
+	if charactersDir == "" {
+		charactersDir = "characters"
+	}
+
+	characterSettings, err := loadCharacterSettings(charactersDir)
+	if err != nil {
+		log.Printf("warning: could not load characters from %q: %v", charactersDir, err)
+	}
+
+	// Fallback to CHARACTER_FILE if no characters found in directory
+	if len(characterSettings) == 0 {
+		characterFile := os.Getenv("CHARACTER_FILE")
+		if characterFile != "" {
+			data, err := os.ReadFile(characterFile)
+			if err != nil {
+				log.Printf("warning: could not read CHARACTER_FILE %q: %v", characterFile, err)
+			} else {
+				setting := strings.TrimSpace(string(data))
+				if setting != "" {
+					characterSettings = []string{setting}
+				}
+			}
 		}
 	}
 
@@ -159,7 +176,8 @@ func LoadConfig() (*Config, error) {
 		DebounceInterval:   3 * time.Second,
 		GenerateInterval:   generateInterval,
 		RecentMessages:     10,
-		CharacterSetting:   characterSetting,
+		CharactersDir:      charactersDir,
+		CharacterSettings:  characterSettings,
 		Debug:              debug,
 		ImageGeneratorType: imageGeneratorType,
 		GeminiImageModel:   geminiImageModel,
@@ -171,4 +189,39 @@ func LoadConfig() (*Config, error) {
 		SDExtraPrompt:      sdExtraPrompt,
 		SDExtraNegPrompt:   sdExtraNegPrompt,
 	}, nil
+}
+
+// loadCharacterSettings reads all .md files from the specified directory,
+// sorted by filename, and returns their contents.
+func loadCharacterSettings(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(strings.ToLower(e.Name()), ".md") {
+			names = append(names, e.Name())
+		}
+	}
+	sort.Strings(names)
+
+	var settings []string
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			log.Printf("warning: could not read character file %q: %v", name, err)
+			continue
+		}
+		content := strings.TrimSpace(string(data))
+		if content != "" {
+			settings = append(settings, content)
+			log.Printf("loaded character setting: %s", name)
+		}
+	}
+	return settings, nil
 }

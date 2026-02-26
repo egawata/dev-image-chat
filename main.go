@@ -19,7 +19,7 @@ func main() {
 
 	imageDir := filepath.Join(".", "generated_images")
 
-	promptGen, err := NewPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSetting)
+	promptGen, err := NewPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSettings)
 	if err != nil {
 		log.Fatalf("prompt generator error: %v", err)
 	}
@@ -91,12 +91,13 @@ func main() {
 		// Rate limiting state
 		var lastGenTime time.Time
 		var pendingRecent []Message
+		var pendingPath string
 		var deferredTimer *time.Timer
 		timerCh := make(chan struct{}, 1)
 
-		generatePrompt := func(recent []Message) {
+		generatePrompt := func(recent []Message, sessionPath string) {
 			ctx := context.Background()
-			prompt, err := promptGen.Generate(ctx, recent)
+			prompt, err := promptGen.Generate(ctx, recent, sessionPath)
 			if err != nil {
 				log.Printf("prompt generation error: %v", err)
 				return
@@ -124,8 +125,10 @@ func main() {
 					Debugf("deferred generation triggered")
 					lastGenTime = time.Now()
 					recent := pendingRecent
+					sessPath := pendingPath
 					pendingRecent = nil
-					generatePrompt(recent)
+					pendingPath = ""
+					generatePrompt(recent, sessPath)
 				}
 
 			case ev, ok := <-watcher.Events():
@@ -158,13 +161,15 @@ func main() {
 						deferredTimer = nil
 					}
 					pendingRecent = nil
+					pendingPath = ""
 					lastGenTime = now
 					Debugf("immediate generation (%.0fs since last)", now.Sub(lastGenTime).Seconds())
-					generatePrompt(recent)
+					generatePrompt(recent, ev.Path)
 				} else {
 					// Too soon — defer to when the interval elapses
 					pendingRecent = make([]Message, len(recent))
 					copy(pendingRecent, recent)
+					pendingPath = ev.Path
 					if deferredTimer != nil {
 						deferredTimer.Stop()
 					}
