@@ -199,6 +199,11 @@ characters/
 - **Stable Diffusion の場合**: WebUI が `--api` オプション付きで起動しているか、`SD_BASE_URL` が正しいか確認してください。
 - **Gemini の場合**: `IMAGE_GENERATOR=gemini` が設定されているか、`GEMINI_API_KEY` が正しいか確認してください。
 
+### 画像の生成間隔が長い
+
+- `.env` ファイル内で `GENERATE_INTERVAL` の値を指定できます。(単位は秒)
+- デフォルトは60秒ですが、高速に画像生成できる環境をお使いならもっと短い値でもいいかもしれません。
+
 ### ブラウザに画像が表示されない
 
 - Web UI (`http://localhost:8080`) が開けるか確認してください。
