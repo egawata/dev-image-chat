@@ -35,6 +35,13 @@ func NewServer(port, imageDir string, done <-chan struct{}) *Server {
 	}
 }
 
+// HasClients returns true if at least one WebSocket client is connected.
+func (s *Server) HasClients() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.clients) > 0
+}
+
 // Broadcast sends the image filename to all connected WebSocket clients.
 func (s *Server) Broadcast(filename string) {
 	s.mu.RLock()
