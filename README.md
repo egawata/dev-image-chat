@@ -212,3 +212,9 @@ characters/
 
 - Web UI (`http://localhost:8080`) が開けるか確認してください。
 - ブラウザの開発者ツールで WebSocket 接続エラーがないか確認してください。
+
+## TODO
+
+- Gemini 以外 (OpenAI, Anthropic, Grok...) も選択可能にする
+- セッションごとに画面を分けて表示
+  - 複数セッションを並列で動かして画面1つだとシーンが混ざって見づらい
