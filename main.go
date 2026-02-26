@@ -122,6 +122,12 @@ func main() {
 			case <-timerCh:
 				// Deferred timer fired — generate with the latest pending data
 				if pendingRecent != nil {
+					if !srv.HasClients() {
+						Debugf("no WebSocket clients connected, skipping deferred generation")
+						pendingRecent = nil
+						pendingPath = ""
+						continue
+					}
 					Debugf("deferred generation triggered")
 					lastGenTime = time.Now()
 					recent := pendingRecent
@@ -152,6 +158,12 @@ func main() {
 				}
 
 				recent := TailMessages(messages, cfg.RecentMessages)
+
+				// Skip generation when no WebSocket clients are connected
+				if !srv.HasClients() {
+					Debugf("no WebSocket clients connected, skipping image generation")
+					continue
+				}
 
 				now := time.Now()
 				if now.Sub(lastGenTime) >= cfg.GenerateInterval {
