@@ -70,7 +70,8 @@ func (w *Watcher) Run(done <-chan struct{}) error {
 					_ = w.addDirs(fsw, ev.Name)
 				}
 			}
-			if ev.Has(fsnotify.Write) && strings.HasSuffix(ev.Name, ".jsonl") {
+			if ev.Has(fsnotify.Write) && strings.HasSuffix(ev.Name, ".jsonl") &&
+				!strings.HasPrefix(filepath.Base(ev.Name), "agent-") {
 				w.scheduleRead(ev.Name)
 			}
 		case err, ok := <-fsw.Errors:
