@@ -141,7 +141,8 @@ Claude Code Image Chat started
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `SERVER_PORT` | `8080` | Web UI のポート番号 |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
-| `CHARACTER_FILE` | *(なし)* | キャラクター設定ファイルのパス |
+| `CHARACTERS_DIR` | `characters` | キャラクター設定ファイルのディレクトリ |
+| `CHARACTER_FILE` | *(なし)* | キャラクター設定ファイルのパス（`CHARACTERS_DIR` が空の場合のフォールバック） |
 | `GENERATE_INTERVAL` | `60` | 画像生成の最小間隔（秒） |
 | `DEBUG` | `false` | デバッグログの有効化（`1` or `true`） |
 
@@ -160,20 +161,31 @@ Claude Code Image Chat started
 
 ## キャラクター設定
 
-`CHARACTER_FILE` にキャラクター設定ファイルのパスを指定すると、生成される画像にキャラクターの外見や雰囲気を反映させることができます。
+`characters` ディレクトリに `.md` ファイルを配置すると、生成される画像にキャラクターの外見や雰囲気を反映させることができます。複数のキャラクターファイルを配置でき、セッションごとに1つのキャラクターが自動的に選ばれます。
+
+### キャラクターファイルの配置（推奨）
+
+`characters/` ディレクトリに `.md` ファイルを作成します。
 
 ```
-CHARACTER_FILE=character.md
+characters/
+├── chara1.md
+└── chara2.md
 ```
 
-設定ファイルの例（`character.md`）:
+設定ファイルの例（`characters/chara1.md`）:
 
 ```markdown
-- 20歳の女子学生
-- 黒髪、緑色の瞳
-- 上品なワンピース姿
-- 場所は学校の図書館
+- 女子学生
+- 黒髪ロング、前髪ぱっつん
+- 学校の制服姿
+- 話し方: 元気な話し方。丁寧語を使う
+- 場面は学校の教室
 ```
+
+髪型、服装などの外見的特徴はなるべく細かく指定すると、画像ごとの雰囲気のばらつきが少なくなって望ましいです。場所も指定したほうがいいでしょう。
+
+ディレクトリは `CHARACTERS_DIR` 環境変数で変更できます（デフォルト: `characters`）。
 
 ## トラブルシューティング
 
