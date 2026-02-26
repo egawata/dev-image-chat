@@ -4,6 +4,8 @@ Claude Code での会話内容に合わせて、リアルタイムにキャラ�
 
 Claude Code の Assistant が応答するたびに、会話の内容を読み取り、Gemini API で画像生成プロンプトを作成、画像生成バックエンド（Stable Diffusion または Gemini）で画像を生成してブラウザに配信します。
 
+![スクリーンショット](assets/ss.jpg)
+
 ## 必要なもの
 
 - **Go 1.24 以上**
