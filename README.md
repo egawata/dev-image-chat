@@ -17,6 +17,7 @@ Claude Code の Assistant が応答するたびに、会話の内容を読み取
 - **Go 1.24 以上**
 - **Google Gemini API キー**
   - [Google AI Studio](https://aistudio.google.com/apikey) から取得できます
+  - 画像生成プロンプト(文字列)を生成するために使います
 - **画像生成バックエンド**（以下のいずれか）
   - **Gemini** — Gemini API キーがあればすぐに使えます（追加セットアップ不要）
   - **Stable Diffusion WebUI** — AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など。`--api` オプション付きで起動し、API が有効になっていること
