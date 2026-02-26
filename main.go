@@ -41,7 +41,8 @@ func main() {
 			Height:      cfg.SDHeight,
 			CfgScale:    cfg.SDCfgScale,
 			SamplerName: cfg.SDSamplerName,
-			ExtraPrompt: cfg.SDExtraPrompt,
+			ExtraPrompt:    cfg.SDExtraPrompt,
+			ExtraNegPrompt: cfg.SDExtraNegPrompt,
 		})
 	}
 	if err != nil {

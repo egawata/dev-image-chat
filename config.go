@@ -34,7 +34,8 @@ type Config struct {
 	SDHeight      int
 	SDCfgScale    float64
 	SDSamplerName string
-	SDExtraPrompt string
+	SDExtraPrompt    string
+	SDExtraNegPrompt string
 }
 
 func LoadConfig() (*Config, error) {
@@ -125,6 +126,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	sdExtraPrompt := os.Getenv("IMGCHAT_SD_EXTRA_PROMPT")
+	sdExtraNegPrompt := os.Getenv("IMGCHAT_SD_EXTRA_NEG_PROMPT")
 
 	imageGeneratorType := strings.ToLower(os.Getenv("IMAGE_GENERATOR"))
 	if imageGeneratorType == "" {
@@ -167,5 +169,6 @@ func LoadConfig() (*Config, error) {
 		SDCfgScale:         sdCfgScale,
 		SDSamplerName:      sdSamplerName,
 		SDExtraPrompt:      sdExtraPrompt,
+		SDExtraNegPrompt:   sdExtraNegPrompt,
 	}, nil
 }

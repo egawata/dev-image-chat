@@ -93,8 +93,9 @@ type SDImageGenerator struct {
 	height      int
 	cfgScale    float64
 	samplerName string
-	extraPrompt string
-	mu          sync.Mutex
+	extraPrompt    string
+	extraNegPrompt string
+	mu             sync.Mutex
 	generating  bool
 }
 
@@ -120,7 +121,8 @@ type SDImageGeneratorConfig struct {
 	Height      int
 	CfgScale    float64
 	SamplerName string
-	ExtraPrompt string
+	ExtraPrompt    string
+	ExtraNegPrompt string
 }
 
 func NewSDImageGenerator(igCfg SDImageGeneratorConfig) (*SDImageGenerator, error) {
@@ -136,7 +138,8 @@ func NewSDImageGenerator(igCfg SDImageGeneratorConfig) (*SDImageGenerator, error
 		height:      igCfg.Height,
 		cfgScale:    igCfg.CfgScale,
 		samplerName: igCfg.SamplerName,
-		extraPrompt: igCfg.ExtraPrompt,
+		extraPrompt:    igCfg.ExtraPrompt,
+		extraNegPrompt: igCfg.ExtraNegPrompt,
 	}, nil
 }
 
@@ -167,7 +170,7 @@ func (ig *SDImageGenerator) Generate(prompt string) (string, error) {
 		}
 		fullPrompt += ig.extraPrompt
 	}
-	negativePrompt := "lowres, bad anatomy, bad hands, text, error, ugly, duplicate, deformed, blurry, realistic, photo"
+	negativePrompt := ig.extraNegPrompt
 
 	reqBody := txt2imgRequest{
 		Prompt:         fullPrompt,
