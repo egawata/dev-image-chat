@@ -69,6 +69,9 @@ func (g *GeminiImageGenerator) Generate(prompt string) (string, error) {
 	ctx := context.Background()
 	resp, err := g.client.Models.GenerateContent(ctx, g.model, genai.Text(prompt), &genai.GenerateContentConfig{
 		ResponseModalities: []string{"IMAGE"},
+		ImageConfig: &genai.ImageConfig{
+			AspectRatio: "3:4",
+		},
 	})
 	if err != nil {
 		return "", fmt.Errorf("Gemini image API error: %w", err)
