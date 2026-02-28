@@ -11,9 +11,10 @@ Each time the Claude Code Assistant responds, it reads the conversation content,
 ## Caution
 
 This application uses the Gemini API.
-Depending on usage frequency, API costs may become significant, so please monitor your usage regularly.
 
-Be especially careful when using Gemini for image generation. For continuous use, we recommend setting up Stable Diffusion WebUI.
+- Depending on usage frequency, API costs may become significant. Please monitor your usage regularly.
+    - Be especially careful when using Gemini for image generation, as costs tend to be high. For continuous use, we recommend setting up Stable Diffusion WebUI.
+- When using the free tier of the Gemini API, your conversation content may be used to improve Google products. If handling confidential information, we recommend using the paid tier API.
 
 ## Requirements
 
