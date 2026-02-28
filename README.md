@@ -137,18 +137,20 @@ Settings can be configured via the `.env` file or environment variables.
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `GEMINI_API_KEY` | *(none)* | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
 | `PROMPT_GENERATOR` | `gemini` | Prompt generator backend (`gemini` or `ollama`) |
 | `IMAGE_GENERATOR` | `sd` | Image generation backend (`sd` or `gemini`) |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
-| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |
-| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI URL |
 | `SERVER_PORT` | `8080` | Web UI port number |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code projects directory |
 | `CHARACTERS_DIR` | `characters` | Directory for character configuration files |
 | `CHARACTER_FILE` | *(none)* | Path to character configuration file (fallback when `CHARACTERS_DIR` is empty) |
 | `GENERATE_INTERVAL` | `60` | Minimum interval between image generations (seconds) |
 | `DEBUG` | `false` | Enable debug logging (`1` or `true`) |
+
+### Gemini Parameters
+
+| `GEMINI_API_KEY` | *(none)* | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
+| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |
 
 ### Ollama Parameters
 
@@ -163,6 +165,7 @@ Effective when `IMAGE_GENERATOR=sd` (default).
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
+| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI URL |
 | `IMGCHAT_SD_STEPS` | `28` | Number of generation steps |
 | `IMGCHAT_SD_WIDTH` | `512` | Image width (px) |
 | `IMGCHAT_SD_HEIGHT` | `768` | Image height (px) |

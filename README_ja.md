@@ -137,18 +137,20 @@ Claude Code Image Chat started
 
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
-| `GEMINI_API_KEY` | *(なし)* | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必要） |
 | `PROMPT_GENERATOR` | `gemini` | プロンプト生成バックエンド（`gemini` or `ollama`） |
 | `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |
-| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
-| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `SERVER_PORT` | `8080` | Web UI のポート番号 |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
 | `CHARACTERS_DIR` | `characters` | キャラクター設定ファイルのディレクトリ |
 | `CHARACTER_FILE` | *(なし)* | キャラクター設定ファイルのパス（`CHARACTERS_DIR` が空の場合のフォールバック） |
 | `GENERATE_INTERVAL` | `60` | 画像生成の最小間隔（秒） |
 | `DEBUG` | `false` | デバッグログの有効化（`1` or `true`） |
+
+### Gemini 関連パラメータ
+
+| `GEMINI_API_KEY` | *(なし)* | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必要） |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |
+| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
 
 ### Ollama 関連パラメータ
 
@@ -161,6 +163,7 @@ Claude Code Image Chat started
 
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
+| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `IMGCHAT_SD_STEPS` | `28` | 生成ステップ数 |
 | `IMGCHAT_SD_WIDTH` | `512` | 画像の幅（px） |
 | `IMGCHAT_SD_HEIGHT` | `768` | 画像の高さ（px） |
