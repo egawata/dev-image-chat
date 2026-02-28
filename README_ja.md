@@ -4,24 +4,25 @@
 
 Claude Code での会話内容に合わせて、リアルタイムにキャラクター画像を自動生成し、ブラウザに表示するツールです。
 
-Claude Code の Assistant が応答するたびに、会話の内容を読み取り、Gemini API で画像生成プロンプトを作成、画像生成バックエンド（Stable Diffusion または Gemini）で画像を生成してブラウザに配信します。
+Claude Code の Assistant が応答するたびに、会話の内容を読み取り、プロンプトジェネレータ（Gemini または Ollama）で画像生成プロンプトを作成、画像生成バックエンド（Stable Diffusion または Gemini）で画像を生成してブラウザに配信します。
 
 ![スクリーンショット](assets/ss.jpg)
 
 ## 注意
 
-このアプリケーションは Gemini API を使用します。
+このアプリケーションはプロンプト生成や画像生成に Gemini API を使用できます。
 
 - 利用頻度によっては API 利用料金が高額になる可能性があります。利用状況をご自身で定期的にチェックしてください。
-    - 特に画像生成を Gemini で行う場合は高額になりがちです。継続使用する場合は Stable Duffision WebUI の導入を推奨します。
+    - 特に画像生成を Gemini で行う場合は高額になりがちです。継続使用する場合は Stable Diffusion WebUI の導入を推奨します。
 - 無料枠の Gemini API を利用する場合、会話の内容が Google プロダクトの改善に使用される場合があります。機密情報を扱う場合は有料枠 API の使用を推奨します。
+- プロンプト生成に Ollama を使用する場合、画像生成にも Gemini を使わなければ Gemini API キーは不要です。
 
 ## 必要なもの
 
 - **Go 1.24 以上**
-- **Google Gemini API キー**
-  - [Google AI Studio](https://aistudio.google.com/apikey) から取得できます
-  - 画像生成プロンプト(文字列)を生成するために使います
+- **プロンプトジェネレータ**（以下のいずれか）
+  - **Gemini**（デフォルト） — Google Gemini API キーが必要です。[Google AI Studio](https://aistudio.google.com/apikey) から取得できます
+  - **Ollama** — ローカルで動作する [Ollama](https://ollama.com/) が必要です（API キー不要）
 - **画像生成バックエンド**（以下のいずれか）
   - **Gemini** — Gemini API キーがあればすぐに使えます（追加セットアップ不要）
   - **Stable Diffusion WebUI** — AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など。`--api` オプション付きで起動し、API が有効になっていること
@@ -70,21 +71,58 @@ go build -o dev-image-chat .
 cp .env.example .env
 ```
 
-`.env` ファイルを開いて、`GEMINI_API_KEY` に Gemini API キーを設定します。
+`.env` ファイルを開いて、プロンプトジェネレータと画像生成バックエンドを設定します。
+
+Gemini をプロンプト生成（デフォルト）や画像生成に使う場合は、API キーを設定します:
 
 ```
 GEMINI_API_KEY=your-api-key-here
+```
+
+Ollama をプロンプト生成に使う場合は、プロンプトジェネレータを設定します:
+
+```
+PROMPT_GENERATOR=ollama
 ```
 
 その他の設定はデフォルト値のままで動作しますが、必要に応じて変更できます。
 
 ## 起動方法
 
-### Gemini バックエンドの場合
+### Gemini（プロンプト生成）+ Gemini（画像生成）の場合
 
 `.env` に以下を設定するだけで、すぐに使えます。
 
 ```
+GEMINI_API_KEY=your-api-key-here
+IMAGE_GENERATOR=gemini
+```
+
+```bash
+./dev-image-chat
+```
+
+### Ollama（プロンプト生成）+ Stable Diffusion（画像生成）の場合
+
+Ollama を起動してモデルをダウンロード（例: `gemma3`）した後、`.env` を設定します:
+
+```
+PROMPT_GENERATOR=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3
+IMAGE_GENERATOR=sd
+```
+
+この構成では Gemini API キーは不要です。
+
+```bash
+./dev-image-chat
+```
+
+### Ollama（プロンプト生成）+ Gemini（画像生成）の場合
+
+```
+PROMPT_GENERATOR=ollama
 GEMINI_API_KEY=your-api-key-here
 IMAGE_GENERATOR=gemini
 ```
@@ -135,15 +173,18 @@ Claude Code Image Chat started
 
 | 環境変数 | 説明 |
 |---------|------|
-| `GEMINI_API_KEY` | Google Gemini API キー |
+| `GEMINI_API_KEY` | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必須） |
 
 ### オプション
 
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
+| `PROMPT_GENERATOR` | `gemini` | プロンプト生成バックエンド（`gemini` or `ollama`） |
 | `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API のベース URL（`PROMPT_GENERATOR=ollama` 時に使用） |
+| `OLLAMA_MODEL` | `gemma3` | Ollama のモデル名（`PROMPT_GENERATOR=ollama` 時に使用） |
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `SERVER_PORT` | `8080` | Web UI のポート番号 |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
@@ -200,7 +241,7 @@ characters/
 
 ### `GEMINI_API_KEY is required` と表示される
 
-`.env` ファイルに `GEMINI_API_KEY` が設定されているか確認してください。
+`PROMPT_GENERATOR=gemini`（デフォルト）または `IMAGE_GENERATOR=gemini` のときに `GEMINI_API_KEY` が未設定だと表示されます。`.env` ファイルに API キーを設定するか、プロンプト生成を Ollama に切り替えてください（`PROMPT_GENERATOR=ollama`）。
 
 ### 画像が生成されない
 
@@ -220,4 +261,4 @@ characters/
 
 ## TODO
 
-- Gemini 以外 (OpenAI, Anthropic, Grok...) も選択可能にする
+- 画像生成バックエンドの追加対応 (OpenAI, Anthropic, Grok...)

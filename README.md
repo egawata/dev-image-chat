@@ -4,24 +4,25 @@
 
 A tool that automatically generates character images in real time based on your Claude Code conversations and displays them in the browser.
 
-Each time the Claude Code Assistant responds, it reads the conversation content, creates an image generation prompt via the Gemini API, generates an image using an image generation backend (Stable Diffusion or Gemini), and delivers it to the browser.
+Each time the Claude Code Assistant responds, it reads the conversation content, creates an image generation prompt via a prompt generator (Gemini or Ollama), generates an image using an image generation backend (Stable Diffusion or Gemini), and delivers it to the browser.
 
 ![Screenshot](assets/ss.jpg)
 
 ## Caution
 
-This application uses the Gemini API.
+This application can use the Gemini API for prompt generation and/or image generation.
 
 - Depending on usage frequency, API costs may become significant. Please monitor your usage regularly.
     - Be especially careful when using Gemini for image generation, as costs tend to be high. For continuous use, we recommend setting up Stable Diffusion WebUI.
 - When using the free tier of the Gemini API, your conversation content may be used to improve Google products. If handling confidential information, we recommend using the paid tier API.
+- When using Ollama for prompt generation, Gemini API is only needed if you also use Gemini for image generation.
 
 ## Requirements
 
 - **Go 1.24 or later**
-- **Google Gemini API Key**
-  - Available from [Google AI Studio](https://aistudio.google.com/apikey)
-  - Used to generate image generation prompts (text)
+- **Prompt Generator** (one of the following)
+  - **Gemini** (default) — Requires a Google Gemini API key, available from [Google AI Studio](https://aistudio.google.com/apikey)
+  - **Ollama** — Requires a locally running [Ollama](https://ollama.com/) instance (no API key needed)
 - **Image Generation Backend** (one of the following)
   - **Gemini** — Ready to use with just a Gemini API key (no additional setup required)
   - **Stable Diffusion WebUI** — Such as AUTOMATIC1111's [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Must be launched with the `--api` option to enable the API
@@ -70,21 +71,58 @@ This creates the `dev-image-chat` executable.
 cp .env.example .env
 ```
 
-Open the `.env` file and set your Gemini API key in `GEMINI_API_KEY`.
+Open the `.env` file and configure the settings. At minimum, choose a prompt generator and image generation backend.
+
+If using Gemini for prompt generation (default) or image generation, set your API key:
 
 ```
 GEMINI_API_KEY=your-api-key-here
+```
+
+If using Ollama for prompt generation, set the prompt generator:
+
+```
+PROMPT_GENERATOR=ollama
 ```
 
 Other settings work with their default values, but can be changed as needed.
 
 ## Usage
 
-### With Gemini Backend
+### With Gemini (Prompt Generator) + Gemini (Image Generator)
 
 Just set the following in `.env` and you're ready to go.
 
 ```
+GEMINI_API_KEY=your-api-key-here
+IMAGE_GENERATOR=gemini
+```
+
+```bash
+./dev-image-chat
+```
+
+### With Ollama (Prompt Generator) + Stable Diffusion (Image Generator)
+
+Start Ollama and pull a model (e.g., `gemma3`), then configure `.env`:
+
+```
+PROMPT_GENERATOR=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=gemma3
+IMAGE_GENERATOR=sd
+```
+
+No Gemini API key is needed in this configuration.
+
+```bash
+./dev-image-chat
+```
+
+### With Ollama (Prompt Generator) + Gemini (Image Generator)
+
+```
+PROMPT_GENERATOR=ollama
 GEMINI_API_KEY=your-api-key-here
 IMAGE_GENERATOR=gemini
 ```
@@ -135,15 +173,18 @@ Settings can be configured via the `.env` file or environment variables.
 
 | Environment Variable | Description |
 |---------------------|-------------|
-| `GEMINI_API_KEY` | Google Gemini API key |
+| `GEMINI_API_KEY` | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
 
 ### Optional
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
+| `PROMPT_GENERATOR` | `gemini` | Prompt generator backend (`gemini` or `ollama`) |
 | `IMAGE_GENERATOR` | `sd` | Image generation backend (`sd` or `gemini`) |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API base URL (used when `PROMPT_GENERATOR=ollama`) |
+| `OLLAMA_MODEL` | `gemma3` | Ollama model name (used when `PROMPT_GENERATOR=ollama`) |
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI URL |
 | `SERVER_PORT` | `8080` | Web UI port number |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code projects directory |
@@ -200,7 +241,7 @@ The directory can be changed with the `CHARACTERS_DIR` environment variable (def
 
 ### `GEMINI_API_KEY is required` is displayed
 
-Check that `GEMINI_API_KEY` is set in the `.env` file.
+This error appears when `PROMPT_GENERATOR=gemini` (default) or `IMAGE_GENERATOR=gemini`, but `GEMINI_API_KEY` is not set. Either set the API key in the `.env` file, or switch to Ollama for prompt generation (`PROMPT_GENERATOR=ollama`).
 
 ### Images are not being generated
 
@@ -220,4 +261,4 @@ Check that `GEMINI_API_KEY` is set in the `.env` file.
 
 ## TODO
 
-- Add support for providers other than Gemini (OpenAI, Anthropic, Grok, etc.)
+- Add support for more image generation backends (OpenAI, Anthropic, Grok, etc.)
