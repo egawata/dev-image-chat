@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -141,6 +142,28 @@ func NewSDImageGenerator(igCfg SDImageGeneratorConfig) (*SDImageGenerator, error
 		extraPrompt:    igCfg.ExtraPrompt,
 		extraNegPrompt: igCfg.ExtraNegPrompt,
 	}, nil
+}
+
+// CheckConnection verifies that the Stable Diffusion WebUI server is reachable.
+// It returns nil on success, or an error describing what went wrong.
+func (ig *SDImageGenerator) CheckConnection(ctx context.Context) error {
+	url := strings.TrimRight(ig.baseURL, "/") + "/sdapi/v1/samplers"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("cannot connect to Stable Diffusion at %s: %w", ig.baseURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Stable Diffusion returned status %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 // Generate sends the prompt to Stable Diffusion and saves the resulting image.

@@ -47,7 +47,7 @@ func main() {
 			OutputDir: imageDir,
 		})
 	default:
-		imageGen, err = NewSDImageGenerator(SDImageGeneratorConfig{
+		sdGen, sdErr := NewSDImageGenerator(SDImageGeneratorConfig{
 			BaseURL:     cfg.SDBaseURL,
 			OutputDir:   imageDir,
 			Steps:       cfg.SDSteps,
@@ -58,6 +58,16 @@ func main() {
 			ExtraPrompt:    cfg.SDExtraPrompt,
 			ExtraNegPrompt: cfg.SDExtraNegPrompt,
 		})
+		if sdErr == nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if connErr := sdGen.CheckConnection(ctx); connErr != nil {
+				log.Println("*******************************")
+				log.Printf("WARNING: Stable Diffusion connectivity check failed: %v", connErr)
+				log.Println("*******************************")
+			}
+			cancel()
+		}
+		imageGen, err = sdGen, sdErr
 	}
 	if err != nil {
 		log.Fatalf("image generator error: %v", err)
