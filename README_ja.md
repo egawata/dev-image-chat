@@ -135,16 +135,9 @@ Claude Code Image Chat started
 
 `.env` ファイルまたは環境変数で設定できます。
 
-### 必須
-
-| 環境変数 | 説明 |
-|---------|------|
-| `GEMINI_API_KEY` | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必須） |
-
-### オプション
-
 | 環境変数 | デフォルト | 説明 |
 |---------|----------|------|
+| `GEMINI_API_KEY` | *(なし)* | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必要） |
 | `PROMPT_GENERATOR` | `gemini` | プロンプト生成バックエンド（`gemini` or `ollama`） |
 | `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |

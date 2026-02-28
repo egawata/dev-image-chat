@@ -135,16 +135,9 @@ Then use Claude Code as usual. Each time the Assistant responds, an image matchi
 
 Settings can be configured via the `.env` file or environment variables.
 
-### Required
-
-| Environment Variable | Description |
-|---------------------|-------------|
-| `GEMINI_API_KEY` | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
-
-### Optional
-
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
+| `GEMINI_API_KEY` | *(none)* | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
 | `PROMPT_GENERATOR` | `gemini` | Prompt generator backend (`gemini` or `ollama`) |
 | `IMAGE_GENERATOR` | `sd` | Image generation backend (`sd` or `gemini`) |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
