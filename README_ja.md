@@ -23,7 +23,8 @@ Claude Code の Assistant が応答するたびに、会話の内容を読み取
 - **Go 1.24 以上**
 - **プロンプトジェネレータ**（以下のいずれか）
   - **Gemini**（デフォルト） — Google Gemini API キーが必要です。[Google AI Studio](https://aistudio.google.com/apikey) から取得できます
-  - **Ollama** — ローカルで動作する [Ollama](https://ollama.com/) が必要です（API キー不要）
+  - **Ollama** — ローカルで動作する [Ollama](https://ollama.com/) が必要です
+    - モデルは [gemma3](https://ollama.com/library/gemma3) なら `1b` 以上であれば問題なさそうです
 - **画像生成バックエンド**（以下のいずれか）
   - **Gemini** — Gemini API キーがあればすぐに使えます（追加セットアップ不要）
   - **Stable Diffusion WebUI** — AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など。`--api` オプション付きで起動し、API が有効になっていること

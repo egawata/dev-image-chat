@@ -23,7 +23,8 @@ By using Ollama for prompt generation and Stable Diffusion for image generation,
 - **Go 1.24 or later**
 - **Prompt Generator** (one of the following)
   - **Gemini** (default) — Requires a Google Gemini API key, available from [Google AI Studio](https://aistudio.google.com/apikey)
-  - **Ollama** — Requires a locally running [Ollama](https://ollama.com/) instance (no API key needed)
+  - **Ollama** — Requires a locally running [Ollama](https://ollama.com/) instance
+    - For the model, [gemma3](https://ollama.com/library/gemma3) `1b` or larger should work fine
 - **Image Generation Backend** (one of the following)
   - **Gemini** — Ready to use with just a Gemini API key (no additional setup required)
   - **Stable Diffusion WebUI** — Such as AUTOMATIC1111's [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Must be launched with the `--api` option to enable the API
