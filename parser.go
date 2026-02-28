@@ -2,12 +2,28 @@ package main
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 )
 
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
+}
+
+// SessionImage is the JSON structure sent over WebSocket to the browser.
+type SessionImage struct {
+	Filename  string `json:"filename"`
+	SessionID string `json:"sessionId"`
+	Title     string `json:"title"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+// PromptWithSession carries a prompt along with session metadata through the pipeline.
+type PromptWithSession struct {
+	Prompt    string
+	SessionID string
+	Title     string
 }
 
 // rawEntry represents a single line in the JSONL log.
@@ -122,4 +138,26 @@ func TailMessages(msgs []Message, n int) []Message {
 		return msgs
 	}
 	return msgs[len(msgs)-n:]
+}
+
+// ExtractTitle returns the first real user message's text, truncated to maxLen runes.
+// Messages starting with '<' are skipped as they are typically system/tool content.
+func ExtractTitle(messages []Message, maxLen int) string {
+	for _, m := range messages {
+		if m.Role == "user" && !strings.HasPrefix(m.Content, "<") {
+			r := []rune(m.Content)
+			if len(r) > maxLen {
+				return string(r[:maxLen]) + "..."
+			}
+			return m.Content
+		}
+	}
+	return ""
+}
+
+// SessionIDFromPath extracts a session ID from a JSONL file path.
+// It returns the basename without the .jsonl extension.
+func SessionIDFromPath(path string) string {
+	base := filepath.Base(path)
+	return strings.TrimSuffix(base, ".jsonl")
 }

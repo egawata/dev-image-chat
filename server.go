@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -42,13 +43,24 @@ func (s *Server) HasClients() bool {
 	return len(s.clients) > 0
 }
 
-// Broadcast sends the image filename to all connected WebSocket clients.
-func (s *Server) Broadcast(filename string) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+// BroadcastSessionImage sends a SessionImage as JSON to all connected WebSocket clients.
+func (s *Server) BroadcastSessionImage(si SessionImage) {
+	data, err := json.Marshal(si)
+	if err != nil {
+		log.Printf("json marshal error: %v", err)
+		return
+	}
 
+	// Snapshot connections under lock, then release before I/O
+	s.mu.RLock()
+	conns := make([]*websocket.Conn, 0, len(s.clients))
 	for conn := range s.clients {
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(filename)); err != nil {
+		conns = append(conns, conn)
+	}
+	s.mu.RUnlock()
+
+	for _, conn := range conns {
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
 			log.Printf("websocket write error: %v", err)
 		}
 	}
