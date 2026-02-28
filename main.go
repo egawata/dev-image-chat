@@ -19,9 +19,15 @@ func main() {
 
 	imageDir := filepath.Join(".", "generated_images")
 
-	promptGen, err := NewPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSettings)
-	if err != nil {
-		log.Fatalf("prompt generator error: %v", err)
+	var promptGen PromptGenerator
+	switch cfg.PromptGeneratorType {
+	case "ollama":
+		promptGen = NewOllamaPromptGenerator(cfg.OllamaBaseURL, cfg.OllamaModel, cfg.CharacterSettings)
+	default:
+		promptGen, err = NewGeminiPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSettings)
+		if err != nil {
+			log.Fatalf("prompt generator error: %v", err)
+		}
 	}
 
 	var imageGen ImageGenerator

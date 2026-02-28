@@ -26,6 +26,11 @@ type Config struct {
 	CharacterSettings  []string
 	Debug              bool
 
+	// Prompt generator selection: "gemini" or "ollama"
+	PromptGeneratorType string
+	OllamaBaseURL       string
+	OllamaModel         string
+
 	// Image generator selection: "sd" or "gemini"
 	ImageGeneratorType string
 	GeminiImageModel   string
@@ -44,10 +49,25 @@ func LoadConfig() (*Config, error) {
 	// .env file is optional; environment variables take precedence
 	_ = godotenv.Load()
 
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")
+	promptGeneratorType := strings.ToLower(os.Getenv("PROMPT_GENERATOR"))
+	if promptGeneratorType == "" {
+		promptGeneratorType = "gemini"
 	}
+	if promptGeneratorType != "gemini" && promptGeneratorType != "ollama" {
+		return nil, fmt.Errorf("PROMPT_GENERATOR must be \"gemini\" or \"ollama\", got %q", promptGeneratorType)
+	}
+
+	ollamaBaseURL := os.Getenv("OLLAMA_BASE_URL")
+	if ollamaBaseURL == "" {
+		ollamaBaseURL = "http://localhost:11434"
+	}
+
+	ollamaModel := os.Getenv("OLLAMA_MODEL")
+	if ollamaModel == "" {
+		ollamaModel = "gemma3"
+	}
+
+	apiKey := os.Getenv("GEMINI_API_KEY")
 
 	sdBaseURL := os.Getenv("SD_BASE_URL")
 	if sdBaseURL == "" {
@@ -158,6 +178,12 @@ func LoadConfig() (*Config, error) {
 		geminiImageModel = "gemini-2.5-flash-image"
 	}
 
+	// GEMINI_API_KEY is required when prompt generator or image generator uses Gemini
+	needsGeminiKey := promptGeneratorType == "gemini" || imageGeneratorType == "gemini"
+	if needsGeminiKey && apiKey == "" {
+		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required when prompt generator or image generator is \"gemini\"")
+	}
+
 	generateInterval := 60 * time.Second
 	if v := os.Getenv("GENERATE_INTERVAL"); v != "" {
 		if sec, err := strconv.Atoi(v); err == nil && sec > 0 {
@@ -168,9 +194,12 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		GeminiAPIKey:       apiKey,
-		GeminiModel:        geminiModel,
-		SDBaseURL:          sdBaseURL,
+		GeminiAPIKey:        apiKey,
+		GeminiModel:         geminiModel,
+		SDBaseURL:           sdBaseURL,
+		PromptGeneratorType: promptGeneratorType,
+		OllamaBaseURL:       ollamaBaseURL,
+		OllamaModel:         ollamaModel,
 		ServerPort:         serverPort,
 		ClaudeProjectDir:   claudeDir,
 		DebounceInterval:   3 * time.Second,
