@@ -27,14 +27,76 @@ Rules:
 - Keep the prompt under 200 words.
 - Do NOT include any negative prompts or technical parameters.`
 
-type PromptGenerator struct {
-	client            *genai.Client
-	model             string
-	baseSystemPrompt  string
+// PromptGenerator is the interface for prompt generation backends.
+type PromptGenerator interface {
+	Generate(ctx context.Context, messages []Message, sessionPath string) (string, error)
+}
+
+// promptGeneratorBase contains shared logic for character selection and system prompt building.
+type promptGeneratorBase struct {
 	characterSettings []string
 }
 
-func NewPromptGenerator(apiKey, model string, characterSettings []string) (*PromptGenerator, error) {
+// selectCharacterIndex returns the character index for a given session path
+// using FNV-1a hash of the session file basename.
+// Returns -1 if no character settings are available.
+func (b *promptGeneratorBase) selectCharacterIndex(sessionPath string) int {
+	if len(b.characterSettings) == 0 {
+		return -1
+	}
+	basename := filepath.Base(sessionPath)
+	h := fnv.New32a()
+	h.Write([]byte(basename))
+	return int(h.Sum32() % uint32(len(b.characterSettings)))
+}
+
+// buildSystemPrompt constructs the full system prompt with character setting.
+func (b *promptGeneratorBase) buildSystemPrompt(characterIndex int) string {
+	sp := baseSystemPrompt
+	if characterIndex >= 0 && characterIndex < len(b.characterSettings) {
+		sp += "\n\nCharacter setting:\n" + b.characterSettings[characterIndex]
+	}
+	return sp
+}
+
+// logDebugInfo logs character index and last message preview when debug mode is enabled.
+func (b *promptGeneratorBase) logDebugInfo(sessionPath string, charIdx int, messages []Message) {
+	if !debugEnabled {
+		return
+	}
+
+	if charIdx >= 0 {
+		Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
+	}
+
+	if len(messages) > 0 {
+		lastMsg := messages[len(messages)-1]
+		runes := []rune(lastMsg.Content)
+		if len(runes) > 200 {
+			runes = runes[:200]
+		}
+		preview := strconv.Quote(string(runes))
+		Debugf("last message content (first 200 chars): %s", preview)
+	}
+}
+
+// buildUserPrompt constructs the user prompt from messages.
+func (b *promptGeneratorBase) buildUserPrompt(messages []Message) (string, error) {
+	convJSON, err := json.Marshal(messages)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal messages: %w", err)
+	}
+	return fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation.", string(convJSON)), nil
+}
+
+// GeminiPromptGenerator generates prompts using the Gemini API.
+type GeminiPromptGenerator struct {
+	promptGeneratorBase
+	client *genai.Client
+	model  string
+}
+
+func NewGeminiPromptGenerator(apiKey, model string, characterSettings []string) (*GeminiPromptGenerator, error) {
 	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -43,63 +105,25 @@ func NewPromptGenerator(apiKey, model string, characterSettings []string) (*Prom
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	return &PromptGenerator{
-		client:            client,
-		model:             model,
-		baseSystemPrompt:  baseSystemPrompt,
-		characterSettings: characterSettings,
+	return &GeminiPromptGenerator{
+		promptGeneratorBase: promptGeneratorBase{
+			characterSettings: characterSettings,
+		},
+		client: client,
+		model:  model,
 	}, nil
 }
 
-// selectCharacterIndex returns the character index for a given session path
-// using FNV-1a hash of the session file basename.
-// Returns -1 if no character settings are available.
-func (pg *PromptGenerator) selectCharacterIndex(sessionPath string) int {
-	if len(pg.characterSettings) == 0 {
-		return -1
-	}
-	basename := filepath.Base(sessionPath)
-	h := fnv.New32a()
-	h.Write([]byte(basename))
-	return int(h.Sum32() % uint32(len(pg.characterSettings)))
-}
-
-// buildSystemPrompt constructs the full system prompt with character setting.
-func (pg *PromptGenerator) buildSystemPrompt(characterIndex int) string {
-	sp := pg.baseSystemPrompt
-	if characterIndex >= 0 && characterIndex < len(pg.characterSettings) {
-		sp += "\n\nCharacter setting:\n" + pg.characterSettings[characterIndex]
-	}
-	return sp
-}
-
-func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
+func (pg *GeminiPromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
 
 	charIdx := pg.selectCharacterIndex(sessionPath)
 	systemPrompt := pg.buildSystemPrompt(charIdx)
+	pg.logDebugInfo(sessionPath, charIdx, messages)
 
-	if debugEnabled {
-		if charIdx >= 0 {
-			Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
-		}
-
-		if len(messages) > 0 {
-			lastMsg := messages[len(messages)-1]
-			runes := []rune(lastMsg.Content)
-			if len(runes) > 200 {
-				runes = runes[:200]
-			}
-			preview := strconv.Quote(string(runes))
-			Debugf("last message content (first 200 chars): %s", preview)
-		}
-	}
-
-	convJSON, err := json.Marshal(messages)
+	userPrompt, err := pg.buildUserPrompt(messages)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal messages: %w", err)
+		return "", err
 	}
-
-	userPrompt := fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation.", string(convJSON))
 
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
