@@ -13,16 +13,21 @@
         body {
             background: #1a1a2e;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            flex-direction: column;
+            height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: #e0e0e0;
             overflow: hidden;
         }
         #container {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             text-align: center;
             position: relative;
+            overflow: hidden;
         }
         #status {
             position: fixed;
@@ -50,7 +55,7 @@
         }
         #current-image {
             max-width: 90vw;
-            max-height: 75vh;
+            max-height: 100%;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             transition: opacity 0.5s ease-in-out;
@@ -67,16 +72,13 @@
 
         /* Session panel */
         #session-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(26, 26, 46, 0.85);
-            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            max-height: 40vh;
+            overflow-y: auto;
+            background: rgba(26, 26, 46, 0.95);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding: 12px 20px;
             font-size: 13px;
-            z-index: 100;
         }
         #session-panel .panel-header {
             display: flex;
