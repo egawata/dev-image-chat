@@ -298,6 +298,22 @@ func main() {
 	log.Printf("  Watching: %s", cfg.ClaudeProjectDir)
 	log.Printf("  Generate interval: %s", cfg.GenerateInterval)
 
+	// Log prompt generator info
+	switch cfg.PromptGeneratorType {
+	case "ollama":
+		log.Printf("  Prompt generator: ollama (model: %s, url: %s)", cfg.OllamaModel, cfg.OllamaBaseURL)
+	default:
+		log.Printf("  Prompt generator: gemini (model: %s)", cfg.GeminiModel)
+	}
+
+	// Log image generator info
+	switch cfg.ImageGeneratorType {
+	case "gemini":
+		log.Printf("  Image generator: gemini (model: %s)", cfg.GeminiImageModel)
+	default:
+		log.Printf("  Image generator: sd (url: %s)", cfg.SDBaseURL)
+	}
+
 	// Wait for shutdown signal
 	<-sigCh
 	log.Println("shutting down...")
