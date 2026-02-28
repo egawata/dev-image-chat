@@ -30,14 +30,11 @@
             overflow: hidden;
         }
         #status {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            backdrop-filter: blur(10px);
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
             transition: all 0.3s ease;
+            white-space: nowrap;
         }
         #status.connected {
             background: rgba(76, 175, 80, 0.2);
@@ -93,6 +90,11 @@
         #session-panel .mode-label .mode-value {
             color: #81c784;
             font-weight: 600;
+        }
+        #session-panel .panel-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         #btn-show-all {
             background: rgba(255, 255, 255, 0.1);
@@ -174,7 +176,6 @@
     </style>
 </head>
 <body>
-    <div id="status" class="disconnected">Disconnected</div>
     <div id="container">
         <div id="placeholder">
             <span class="emoji">🎨</span>
@@ -188,7 +189,10 @@
     <div id="session-panel">
         <div class="panel-header">
             <span class="mode-label">Mode: <span id="mode-value" class="mode-value">All Sessions</span></span>
-            <button id="btn-show-all" class="hidden" onclick="switchToShared()">Show All</button>
+            <div class="panel-header-right">
+                <button id="btn-show-all" class="hidden" onclick="switchToShared()">Show All</button>
+                <span id="status" class="disconnected">Disconnected</span>
+            </div>
         </div>
         <table id="session-table">
             <thead>
