@@ -51,10 +51,15 @@ func (s *Server) BroadcastSessionImage(si SessionImage) {
 		return
 	}
 
+	// Snapshot connections under lock, then release before I/O
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-
+	conns := make([]*websocket.Conn, 0, len(s.clients))
 	for conn := range s.clients {
+		conns = append(conns, conn)
+	}
+	s.mu.RUnlock()
+
+	for _, conn := range conns {
 		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
 			log.Printf("websocket write error: %v", err)
 		}

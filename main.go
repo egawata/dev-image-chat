@@ -87,7 +87,9 @@ func main() {
 
 		// Track full file content per path for re-parsing
 		fileData := make(map[string][]byte)
-		// Cache session titles so we only compute them once per session
+		// Cache session titles so we only compute them once per session.
+		// Capped to maxSessionTitles entries to prevent unbounded growth.
+		const maxSessionTitles = 50
 		sessionTitles := make(map[string]string)
 
 		// Rate limiting state
@@ -112,6 +114,13 @@ func main() {
 			if !ok {
 				allMsgs := ParseJSONL(fileData[sessionPath])
 				title = ExtractTitle(allMsgs, 30)
+				if len(sessionTitles) >= maxSessionTitles {
+					// Evict an arbitrary entry to keep the cache bounded
+					for k := range sessionTitles {
+						delete(sessionTitles, k)
+						break
+					}
+				}
 				sessionTitles[sessionID] = title
 			}
 

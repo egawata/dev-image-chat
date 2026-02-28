@@ -277,12 +277,25 @@
             const sid = msg.sessionId || '';
             let session = sessions.get(sid);
             if (!session) {
-                session = { sessionId: sid, title: msg.title || sid, updatedAt: msg.updatedAt || '', images: [] };
+                session = { sessionId: sid, title: msg.title || sid, updatedAt: msg.updatedAt || '', lastFilename: '', imageCount: 0 };
                 sessions.set(sid, session);
             }
             session.updatedAt = msg.updatedAt || new Date().toISOString();
             if (msg.title) session.title = msg.title;
-            session.images.push(msg.filename);
+            session.lastFilename = msg.filename;
+            session.imageCount++;
+
+            // Prune sessions map to most-recent 20 (plus current selection)
+            if (sessions.size > 20) {
+                const sorted = [...sessions.entries()].sort((a, b) =>
+                    (b[1].updatedAt || '').localeCompare(a[1].updatedAt || '')
+                );
+                const keep = new Set(sorted.slice(0, 20).map(e => e[0]));
+                if (currentMode !== 'shared') keep.add(currentMode);
+                for (const key of sessions.keys()) {
+                    if (!keep.has(key)) sessions.delete(key);
+                }
+            }
 
             renderSessionList(sid);
         }
@@ -327,7 +340,7 @@
 
                 const tdCount = document.createElement('td');
                 tdCount.className = 'count-cell';
-                tdCount.textContent = s.images.length;
+                tdCount.textContent = s.imageCount;
 
                 tr.appendChild(tdId);
                 tr.appendChild(tdTitle);
@@ -344,6 +357,11 @@
         }
 
         function switchToSession(sessionId) {
+            if (!sessionId || !sessions.has(sessionId)) {
+                switchToShared();
+                return;
+            }
+
             currentMode = sessionId;
             const s = sessions.get(sessionId);
             const shortId = sessionId.length > 8 ? sessionId.slice(0, 8) + '...' : sessionId;
@@ -351,8 +369,8 @@
             btnShowAll.classList.remove('hidden');
 
             // Show the latest image from this session
-            if (s && s.images.length > 0) {
-                showImage(s.images[s.images.length - 1]);
+            if (s.lastFilename) {
+                showImage(s.lastFilename);
             }
 
             renderSessionList();
