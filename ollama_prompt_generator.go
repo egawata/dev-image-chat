@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -54,22 +52,7 @@ func NewOllamaPromptGenerator(baseURL, model string, characterSettings []string)
 func (pg *OllamaPromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
 	charIdx := pg.selectCharacterIndex(sessionPath)
 	systemPrompt := pg.buildSystemPrompt(charIdx)
-
-	if debugEnabled {
-		if charIdx >= 0 {
-			Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
-		}
-
-		if len(messages) > 0 {
-			lastMsg := messages[len(messages)-1]
-			runes := []rune(lastMsg.Content)
-			if len(runes) > 200 {
-				runes = runes[:200]
-			}
-			preview := strconv.Quote(string(runes))
-			Debugf("last message content (first 200 chars): %s", preview)
-		}
-	}
+	pg.logDebugInfo(sessionPath, charIdx, messages)
 
 	userPrompt, err := pg.buildUserPrompt(messages)
 	if err != nil {

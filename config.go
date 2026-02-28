@@ -14,17 +14,17 @@ import (
 )
 
 type Config struct {
-	GeminiAPIKey       string
-	GeminiModel        string
-	SDBaseURL          string
-	ServerPort         string
-	ClaudeProjectDir   string
-	DebounceInterval   time.Duration
-	GenerateInterval   time.Duration
-	RecentMessages     int
-	CharactersDir      string
-	CharacterSettings  []string
-	Debug              bool
+	GeminiAPIKey      string
+	GeminiModel       string
+	SDBaseURL         string
+	ServerPort        string
+	ClaudeProjectDir  string
+	DebounceInterval  time.Duration
+	GenerateInterval  time.Duration
+	RecentMessages    int
+	CharactersDir     string
+	CharacterSettings []string
+	Debug             bool
 
 	// Prompt generator selection: "gemini" or "ollama"
 	PromptGeneratorType string
@@ -36,11 +36,11 @@ type Config struct {
 	GeminiImageModel   string
 
 	// Stable Diffusion image generation parameters
-	SDSteps       int
-	SDWidth       int
-	SDHeight      int
-	SDCfgScale    float64
-	SDSamplerName string
+	SDSteps          int
+	SDWidth          int
+	SDHeight         int
+	SDCfgScale       float64
+	SDSamplerName    string
 	SDExtraPrompt    string
 	SDExtraNegPrompt string
 }
@@ -200,23 +200,23 @@ func LoadConfig() (*Config, error) {
 		PromptGeneratorType: promptGeneratorType,
 		OllamaBaseURL:       ollamaBaseURL,
 		OllamaModel:         ollamaModel,
-		ServerPort:         serverPort,
-		ClaudeProjectDir:   claudeDir,
-		DebounceInterval:   3 * time.Second,
-		GenerateInterval:   generateInterval,
-		RecentMessages:     10,
-		CharactersDir:      charactersDir,
-		CharacterSettings:  characterSettings,
-		Debug:              debug,
-		ImageGeneratorType: imageGeneratorType,
-		GeminiImageModel:   geminiImageModel,
-		SDSteps:            sdSteps,
-		SDWidth:            sdWidth,
-		SDHeight:           sdHeight,
-		SDCfgScale:         sdCfgScale,
-		SDSamplerName:      sdSamplerName,
-		SDExtraPrompt:      sdExtraPrompt,
-		SDExtraNegPrompt:   sdExtraNegPrompt,
+		ServerPort:          serverPort,
+		ClaudeProjectDir:    claudeDir,
+		DebounceInterval:    3 * time.Second,
+		GenerateInterval:    generateInterval,
+		RecentMessages:      10,
+		CharactersDir:       charactersDir,
+		CharacterSettings:   characterSettings,
+		Debug:               debug,
+		ImageGeneratorType:  imageGeneratorType,
+		GeminiImageModel:    geminiImageModel,
+		SDSteps:             sdSteps,
+		SDWidth:             sdWidth,
+		SDHeight:            sdHeight,
+		SDCfgScale:          sdCfgScale,
+		SDSamplerName:       sdSamplerName,
+		SDExtraPrompt:       sdExtraPrompt,
+		SDExtraNegPrompt:    sdExtraNegPrompt,
 	}, nil
 }
 

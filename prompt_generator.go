@@ -59,6 +59,27 @@ func (b *promptGeneratorBase) buildSystemPrompt(characterIndex int) string {
 	return sp
 }
 
+// logDebugInfo logs character index and last message preview when debug mode is enabled.
+func (b *promptGeneratorBase) logDebugInfo(sessionPath string, charIdx int, messages []Message) {
+	if !debugEnabled {
+		return
+	}
+
+	if charIdx >= 0 {
+		Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
+	}
+
+	if len(messages) > 0 {
+		lastMsg := messages[len(messages)-1]
+		runes := []rune(lastMsg.Content)
+		if len(runes) > 200 {
+			runes = runes[:200]
+		}
+		preview := strconv.Quote(string(runes))
+		Debugf("last message content (first 200 chars): %s", preview)
+	}
+}
+
 // buildUserPrompt constructs the user prompt from messages.
 func (b *promptGeneratorBase) buildUserPrompt(messages []Message) (string, error) {
 	convJSON, err := json.Marshal(messages)
@@ -97,22 +118,7 @@ func (pg *GeminiPromptGenerator) Generate(ctx context.Context, messages []Messag
 
 	charIdx := pg.selectCharacterIndex(sessionPath)
 	systemPrompt := pg.buildSystemPrompt(charIdx)
-
-	if debugEnabled {
-		if charIdx >= 0 {
-			Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
-		}
-
-		if len(messages) > 0 {
-			lastMsg := messages[len(messages)-1]
-			runes := []rune(lastMsg.Content)
-			if len(runes) > 200 {
-				runes = runes[:200]
-			}
-			preview := strconv.Quote(string(runes))
-			Debugf("last message content (first 200 chars): %s", preview)
-		}
-	}
+	pg.logDebugInfo(sessionPath, charIdx, messages)
 
 	userPrompt, err := pg.buildUserPrompt(messages)
 	if err != nil {
