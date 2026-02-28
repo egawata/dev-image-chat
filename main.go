@@ -22,7 +22,15 @@ func main() {
 	var promptGen PromptGenerator
 	switch cfg.PromptGeneratorType {
 	case "ollama":
-		promptGen = NewOllamaPromptGenerator(cfg.OllamaBaseURL, cfg.OllamaModel, cfg.CharacterSettings)
+		ollamaGen := NewOllamaPromptGenerator(cfg.OllamaBaseURL, cfg.OllamaModel, cfg.CharacterSettings)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := ollamaGen.CheckConnection(ctx); err != nil {
+			log.Println("*******************************")
+			log.Printf("WARNING: Ollama connectivity check failed: %v", err)
+			log.Println("*******************************")
+		}
+		cancel()
+		promptGen = ollamaGen
 	default:
 		promptGen, err = NewGeminiPromptGenerator(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.CharacterSettings)
 		if err != nil {

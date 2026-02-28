@@ -49,6 +49,52 @@ func NewOllamaPromptGenerator(baseURL, model string, characterSettings []string)
 	}
 }
 
+// CheckConnection verifies that the Ollama server is reachable and the
+// configured model is available. It returns nil on success, or an error
+// describing what went wrong.
+func (pg *OllamaPromptGenerator) CheckConnection(ctx context.Context) error {
+	url := strings.TrimRight(pg.baseURL, "/") + "/api/tags"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("cannot connect to Ollama at %s: %w", pg.baseURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Ollama returned status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("failed to decode Ollama response: %w", err)
+	}
+
+	// Check if the configured model is available
+	for _, m := range result.Models {
+		// Model names may include a tag (e.g. "gemma3:latest"), so match
+		// both exact name and name without tag.
+		name := strings.Split(m.Name, ":")[0]
+		if m.Name == pg.model || name == pg.model {
+			return nil
+		}
+	}
+
+	available := make([]string, len(result.Models))
+	for i, m := range result.Models {
+		available[i] = m.Name
+	}
+	return fmt.Errorf("model %q not found in Ollama (available: %s)", pg.model, strings.Join(available, ", "))
+}
+
 func (pg *OllamaPromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
 	charIdx := pg.selectCharacterIndex(sessionPath)
 	systemPrompt := pg.buildSystemPrompt(charIdx)
