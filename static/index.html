@@ -101,6 +101,28 @@
             align-items: center;
             gap: 8px;
         }
+        #toggle-sessions {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        #toggle-sessions:hover {
+            color: #e0e0e0;
+        }
+        #session-panel.collapsed #session-table {
+            display: none;
+        }
+        #session-panel.collapsed {
+            padding-bottom: 8px;
+        }
+        #session-panel.collapsed .panel-header {
+            margin-bottom: 0;
+        }
         #btn-show-all {
             background: rgba(255, 255, 255, 0.1);
             color: #e0e0e0;
@@ -197,6 +219,7 @@
             <div class="panel-header-right">
                 <button id="btn-show-all" class="hidden" onclick="switchToShared()">Show All</button>
                 <span id="status" class="disconnected">Disconnected</span>
+                <button id="toggle-sessions" onclick="toggleSessionPanel()" title="Toggle session list">▼</button>
             </div>
         </div>
         <table id="session-table">
@@ -220,6 +243,13 @@
         const modeValue = document.getElementById('mode-value');
         const btnShowAll = document.getElementById('btn-show-all');
         const sessionTbody = document.getElementById('session-tbody');
+        const sessionPanel = document.getElementById('session-panel');
+        const toggleBtn = document.getElementById('toggle-sessions');
+
+        function toggleSessionPanel() {
+            const collapsed = sessionPanel.classList.toggle('collapsed');
+            toggleBtn.textContent = collapsed ? '▲' : '▼';
+        }
 
         // Session state: sessionId -> { sessionId, title, updatedAt, images: [filename, ...] }
         const sessions = new Map();
