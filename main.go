@@ -58,8 +58,8 @@ func main() {
 	watcher := NewWatcher(cfg.ClaudeProjectDir, cfg.DebounceInterval)
 
 	// Channels for the pipeline
-	promptCh := make(chan string, 4)
-	imageCh := make(chan string, 4)
+	promptCh := make(chan PromptWithSession, 4)
+	imageCh := make(chan SessionImage, 4)
 
 	// Handle shutdown signals
 	sigCh := make(chan os.Signal, 1)
@@ -87,6 +87,8 @@ func main() {
 
 		// Track full file content per path for re-parsing
 		fileData := make(map[string][]byte)
+		// Cache session titles so we only compute them once per session
+		sessionTitles := make(map[string]string)
 
 		// Rate limiting state
 		var lastGenTime time.Time
@@ -105,8 +107,20 @@ func main() {
 
 			Debugf("generated prompt (%d chars): %q", len(prompt), prompt)
 
+			sessionID := SessionIDFromPath(sessionPath)
+			title, ok := sessionTitles[sessionID]
+			if !ok {
+				allMsgs := ParseJSONL(fileData[sessionPath])
+				title = ExtractTitle(allMsgs, 30)
+				sessionTitles[sessionID] = title
+			}
+
 			select {
-			case promptCh <- prompt:
+			case promptCh <- PromptWithSession{
+				Prompt:    prompt,
+				SessionID: sessionID,
+				Title:     title,
+			}:
 			case <-done:
 			}
 		}
@@ -208,11 +222,11 @@ func main() {
 			select {
 			case <-done:
 				return
-			case prompt, ok := <-promptCh:
+			case ps, ok := <-promptCh:
 				if !ok {
 					return
 				}
-				filename, err := imageGen.Generate(prompt)
+				filename, err := imageGen.Generate(ps.Prompt)
 				if err != nil {
 					log.Printf("image generation error: %v", err)
 					continue
@@ -221,8 +235,15 @@ func main() {
 					continue // skipped due to concurrent generation
 				}
 
+				si := SessionImage{
+					Filename:  filename,
+					SessionID: ps.SessionID,
+					Title:     ps.Title,
+					UpdatedAt: time.Now().Format(time.RFC3339),
+				}
+
 				select {
-				case imageCh <- filename:
+				case imageCh <- si:
 				case <-done:
 					return
 				}
@@ -238,12 +259,12 @@ func main() {
 			select {
 			case <-done:
 				return
-			case filename, ok := <-imageCh:
+			case si, ok := <-imageCh:
 				if !ok {
 					return
 				}
-				Debugf("broadcasting new image: %s", filename)
-				srv.Broadcast(filename)
+				Debugf("broadcasting new image: %s (session=%s)", si.Filename, si.SessionID)
+				srv.BroadcastSessionImage(si)
 			}
 		}
 	}()

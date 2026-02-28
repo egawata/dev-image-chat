@@ -50,7 +50,7 @@
         }
         #current-image {
             max-width: 90vw;
-            max-height: 85vh;
+            max-height: 75vh;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             transition: opacity 0.5s ease-in-out;
@@ -63,6 +63,111 @@
             font-size: 48px;
             display: block;
             margin-bottom: 16px;
+        }
+
+        /* Session panel */
+        #session-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.85);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            font-size: 13px;
+            z-index: 100;
+        }
+        #session-panel .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        #session-panel .mode-label {
+            font-size: 12px;
+            color: #999;
+        }
+        #session-panel .mode-label .mode-value {
+            color: #81c784;
+            font-weight: 600;
+        }
+        #btn-show-all {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #btn-show-all:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #btn-show-all.hidden {
+            display: none;
+        }
+        #session-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #session-table th {
+            text-align: left;
+            color: #888;
+            font-weight: 500;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        #session-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        #session-table tr.session-row {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #session-table tr.session-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        #session-table tr.session-row.active {
+            background: rgba(76, 175, 80, 0.1);
+        }
+        #session-table .session-id-cell {
+            color: #90caf9;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #session-table .title-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #session-table .time-cell {
+            color: #999;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        #session-table .count-cell {
+            color: #999;
+            text-align: right;
+            font-size: 12px;
+        }
+
+        @keyframes rowFlash {
+            0%   { background: rgba(76, 175, 80, 0.3); }
+            100% { background: transparent; }
+        }
+        #session-table tr.flash {
+            animation: rowFlash 1s ease-out;
         }
     </style>
 </head>
@@ -78,11 +183,37 @@
         </div>
     </div>
 
+    <div id="session-panel">
+        <div class="panel-header">
+            <span class="mode-label">Mode: <span id="mode-value" class="mode-value">All Sessions</span></span>
+            <button id="btn-show-all" class="hidden" onclick="switchToShared()">Show All</button>
+        </div>
+        <table id="session-table">
+            <thead>
+                <tr>
+                    <th>Session</th>
+                    <th>Title</th>
+                    <th>Updated</th>
+                    <th style="text-align:right">Images</th>
+                </tr>
+            </thead>
+            <tbody id="session-tbody"></tbody>
+        </table>
+    </div>
+
     <script>
         const statusEl = document.getElementById('status');
         const placeholder = document.getElementById('placeholder');
         const imageWrapper = document.getElementById('image-wrapper');
         const currentImage = document.getElementById('current-image');
+        const modeValue = document.getElementById('mode-value');
+        const btnShowAll = document.getElementById('btn-show-all');
+        const sessionTbody = document.getElementById('session-tbody');
+
+        // Session state: sessionId -> { sessionId, title, updatedAt, images: [filename, ...] }
+        const sessions = new Map();
+        // 'shared' = show all, or a sessionId string = show only that session
+        let currentMode = 'shared';
 
         let ws;
         let reconnectTimer;
@@ -101,19 +232,19 @@
             };
 
             ws.onmessage = (event) => {
-                const filename = event.data;
-                const imageUrl = `/images/${filename}`;
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch (e) {
+                    // Fallback for plain filename (backward compatibility)
+                    msg = { filename: event.data, sessionId: '', title: '', updatedAt: '' };
+                }
 
-                // Fade out, swap, fade in
-                currentImage.style.opacity = '0';
-                setTimeout(() => {
-                    currentImage.src = imageUrl;
-                    currentImage.onload = () => {
-                        placeholder.style.display = 'none';
-                        imageWrapper.style.display = 'inline-block';
-                        currentImage.style.opacity = '1';
-                    };
-                }, 300);
+                updateSession(msg);
+
+                if (shouldShowImage(msg.sessionId)) {
+                    showImage(msg.filename);
+                }
             };
 
             ws.onclose = () => {
@@ -125,6 +256,121 @@
             ws.onerror = () => {
                 ws.close();
             };
+        }
+
+        function showImage(filename) {
+            const imageUrl = `/images/${filename}`;
+            currentImage.style.opacity = '0';
+            setTimeout(() => {
+                currentImage.src = imageUrl;
+                currentImage.onload = () => {
+                    placeholder.style.display = 'none';
+                    imageWrapper.style.display = 'inline-block';
+                    currentImage.style.opacity = '1';
+                };
+            }, 300);
+        }
+
+        function updateSession(msg) {
+            const sid = msg.sessionId || '';
+            let session = sessions.get(sid);
+            if (!session) {
+                session = { sessionId: sid, title: msg.title || sid, updatedAt: msg.updatedAt || '', images: [] };
+                sessions.set(sid, session);
+            }
+            session.updatedAt = msg.updatedAt || new Date().toISOString();
+            if (msg.title) session.title = msg.title;
+            session.images.push(msg.filename);
+
+            renderSessionList(sid);
+        }
+
+        function shouldShowImage(sessionId) {
+            if (currentMode === 'shared') return true;
+            return currentMode === sessionId;
+        }
+
+        function renderSessionList(flashSessionId) {
+            // Sort by updatedAt descending
+            const sorted = [...sessions.values()].sort((a, b) => {
+                return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+            });
+
+            // Show at most 5
+            const display = sorted.slice(0, 5);
+
+            sessionTbody.innerHTML = '';
+            for (const s of display) {
+                const tr = document.createElement('tr');
+                tr.className = 'session-row';
+                if (currentMode === s.sessionId) {
+                    tr.classList.add('active');
+                }
+                tr.onclick = () => switchToSession(s.sessionId);
+
+                const shortId = s.sessionId.length > 8 ? s.sessionId.slice(0, 8) + '...' : s.sessionId;
+
+                const tdId = document.createElement('td');
+                tdId.className = 'session-id-cell';
+                tdId.textContent = shortId;
+                tdId.title = s.sessionId;
+
+                const tdTitle = document.createElement('td');
+                tdTitle.className = 'title-cell';
+                tdTitle.textContent = s.title || '(no title)';
+
+                const tdTime = document.createElement('td');
+                tdTime.className = 'time-cell';
+                tdTime.textContent = formatTime(s.updatedAt);
+
+                const tdCount = document.createElement('td');
+                tdCount.className = 'count-cell';
+                tdCount.textContent = s.images.length;
+
+                tr.appendChild(tdId);
+                tr.appendChild(tdTitle);
+                tr.appendChild(tdTime);
+                tr.appendChild(tdCount);
+                sessionTbody.appendChild(tr);
+
+                // Flash animation for updated row
+                if (flashSessionId && s.sessionId === flashSessionId) {
+                    tr.classList.add('flash');
+                    tr.addEventListener('animationend', () => tr.classList.remove('flash'), { once: true });
+                }
+            }
+        }
+
+        function switchToSession(sessionId) {
+            currentMode = sessionId;
+            const s = sessions.get(sessionId);
+            const shortId = sessionId.length > 8 ? sessionId.slice(0, 8) + '...' : sessionId;
+            modeValue.textContent = shortId;
+            btnShowAll.classList.remove('hidden');
+
+            // Show the latest image from this session
+            if (s && s.images.length > 0) {
+                showImage(s.images[s.images.length - 1]);
+            }
+
+            renderSessionList();
+        }
+
+        function switchToShared() {
+            currentMode = 'shared';
+            modeValue.textContent = 'All Sessions';
+            btnShowAll.classList.add('hidden');
+            renderSessionList();
+        }
+
+        function formatTime(isoStr) {
+            if (!isoStr) return '';
+            try {
+                const d = new Date(isoStr);
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } catch {
+                return '';
+            }
         }
 
         function scheduleReconnect() {
