@@ -1,33 +1,35 @@
 # Dev Image Chat
 
-Claude Code での会話内容に合わせて、リアルタイムにキャラクター画像を自動生成し、ブラウザに表示するツールです。
+[日本語ドキュメント](README_ja.md)
 
-Claude Code の Assistant が応答するたびに、会話の内容を読み取り、Gemini API で画像生成プロンプトを作成、画像生成バックエンド（Stable Diffusion または Gemini）で画像を生成してブラウザに配信します。
+A tool that automatically generates character images in real time based on your Claude Code conversations and displays them in the browser.
 
-![スクリーンショット](assets/ss.jpg)
+Each time the Claude Code Assistant responds, it reads the conversation content, creates an image generation prompt via the Gemini API, generates an image using an image generation backend (Stable Diffusion or Gemini), and delivers it to the browser.
 
-## 注意
+![Screenshot](assets/ss.jpg)
 
-このアプリケーションは Gemini API を使用します。
-利用頻度によっては API 利用料金が高額になる可能性があるため、利用状況をご自身で定期的にチェックしてください。
+## Caution
 
-特に画像生成を Gemini で行う場合にご注意ください。継続使用する場合は Stable Duffision WebUI の導入を推奨します。
+This application uses the Gemini API.
+Depending on usage frequency, API costs may become significant, so please monitor your usage regularly.
 
-## 必要なもの
+Be especially careful when using Gemini for image generation. For continuous use, we recommend setting up Stable Diffusion WebUI.
 
-- **Go 1.24 以上**
-- **Google Gemini API キー**
-  - [Google AI Studio](https://aistudio.google.com/apikey) から取得できます
-  - 画像生成プロンプト(文字列)を生成するために使います
-- **画像生成バックエンド**（以下のいずれか）
-  - **Gemini** — Gemini API キーがあればすぐに使えます（追加セットアップ不要）
-  - **Stable Diffusion WebUI** — AUTOMATIC1111 の [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) など。`--api` オプション付きで起動し、API が有効になっていること
+## Requirements
 
-## インストール
+- **Go 1.24 or later**
+- **Google Gemini API Key**
+  - Available from [Google AI Studio](https://aistudio.google.com/apikey)
+  - Used to generate image generation prompts (text)
+- **Image Generation Backend** (one of the following)
+  - **Gemini** — Ready to use with just a Gemini API key (no additional setup required)
+  - **Stable Diffusion WebUI** — Such as AUTOMATIC1111's [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui). Must be launched with the `--api` option to enable the API
 
-### 1. Go のインストール
+## Installation
 
-Go がまだインストールされていない場合は、以下のいずれかの方法でインストールしてください。
+### 1. Install Go
+
+If Go is not yet installed, use one of the following methods.
 
 **macOS (Homebrew):**
 
@@ -35,51 +37,51 @@ Go がまだインストールされていない場合は、以下のいずれ�
 brew install go
 ```
 
-**その他の環境:**
+**Other platforms:**
 
-[Go 公式サイト](https://go.dev/dl/) からダウンロードしてインストールしてください。
+Download and install from the [official Go website](https://go.dev/dl/).
 
-インストール後、バージョンを確認します。
+After installation, verify the version:
 
 ```bash
 go version
-# go1.24.0 以上が表示されればOK
+# Should show go1.24.0 or later
 ```
 
-### 2. リポジトリの取得
+### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/egawata/dev-image-chat.git
 cd dev-image-chat
 ```
 
-### 3. ビルド
+### 3. Build
 
 ```bash
 go build -o dev-image-chat .
 ```
 
-`dev-image-chat` という実行ファイルが作成されます。
+This creates the `dev-image-chat` executable.
 
-### 4. 設定ファイルの作成
+### 4. Create Configuration File
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` ファイルを開いて、`GEMINI_API_KEY` に Gemini API キーを設定します。
+Open the `.env` file and set your Gemini API key in `GEMINI_API_KEY`.
 
 ```
 GEMINI_API_KEY=your-api-key-here
 ```
 
-その他の設定はデフォルト値のままで動作しますが、必要に応じて変更できます。
+Other settings work with their default values, but can be changed as needed.
 
-## 起動方法
+## Usage
 
-### Gemini バックエンドの場合
+### With Gemini Backend
 
-`.env` に以下を設定するだけで、すぐに使えます。
+Just set the following in `.env` and you're ready to go.
 
 ```
 GEMINI_API_KEY=your-api-key-here
@@ -90,26 +92,26 @@ IMAGE_GENERATOR=gemini
 ./dev-image-chat
 ```
 
-### Stable Diffusion バックエンドの場合
+### With Stable Diffusion Backend
 
-まず Stable Diffusion WebUI を API 有効の状態で起動してください。
+First, start Stable Diffusion WebUI with the API enabled.
 
 ```bash
-# stable-diffusion-webui のディレクトリで
+# In the stable-diffusion-webui directory
 ./webui.sh --api
 ```
 
-デフォルトで `http://localhost:7860` で起動します。
+By default, it starts at `http://localhost:7860`.
 
-`.env` の `IMAGE_GENERATOR` はデフォルトで `sd` なので、そのまま起動できます。
+Since `IMAGE_GENERATOR` defaults to `sd` in `.env`, you can start directly.
 
 ```bash
 ./dev-image-chat
 ```
 
-### 起動確認
+### Verifying Startup
 
-以下のようなログが出れば起動成功です。
+If you see the following log output, the startup was successful.
 
 ```
 Claude Code Image Chat started
@@ -118,57 +120,57 @@ Claude Code Image Chat started
   Generate interval: 1m0s
 ```
 
-### ブラウザで Web UI を開く
+### Open the Web UI in Your Browser
 
-`http://localhost:8080` にアクセスすると、画像表示画面が開きます。
+Access `http://localhost:8080` to open the image display screen.
 
-あとは普段通り Claude Code を使ってください。Assistant が応答するたびに、会話内容に合った画像が自動的に生成・表示されます。(デフォルトでは60秒のインターバルがあります)
+Then use Claude Code as usual. Each time the Assistant responds, an image matching the conversation content will be automatically generated and displayed. (There is a 60-second interval by default.)
 
-## 設定項目
+## Configuration
 
-`.env` ファイルまたは環境変数で設定できます。
+Settings can be configured via the `.env` file or environment variables.
 
-### 必須
+### Required
 
-| 環境変数 | 説明 |
-|---------|------|
-| `GEMINI_API_KEY` | Google Gemini API キー |
+| Environment Variable | Description |
+|---------------------|-------------|
+| `GEMINI_API_KEY` | Google Gemini API key |
 
-### オプション
+### Optional
 
-| 環境変数 | デフォルト | 説明 |
-|---------|----------|------|
-| `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル |
-| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
-| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
-| `SERVER_PORT` | `8080` | Web UI のポート番号 |
-| `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
-| `CHARACTERS_DIR` | `characters` | キャラクター設定ファイルのディレクトリ |
-| `CHARACTER_FILE` | *(なし)* | キャラクター設定ファイルのパス（`CHARACTERS_DIR` が空の場合のフォールバック） |
-| `GENERATE_INTERVAL` | `60` | 画像生成の最小間隔（秒） |
-| `DEBUG` | `false` | デバッグログの有効化（`1` or `true`） |
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `IMAGE_GENERATOR` | `sd` | Image generation backend (`sd` or `gemini`) |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation |
+| `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |
+| `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI URL |
+| `SERVER_PORT` | `8080` | Web UI port number |
+| `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code projects directory |
+| `CHARACTERS_DIR` | `characters` | Directory for character configuration files |
+| `CHARACTER_FILE` | *(none)* | Path to character configuration file (fallback when `CHARACTERS_DIR` is empty) |
+| `GENERATE_INTERVAL` | `60` | Minimum interval between image generations (seconds) |
+| `DEBUG` | `false` | Enable debug logging (`1` or `true`) |
 
-### Stable Diffusion 画像生成パラメータ
+### Stable Diffusion Image Generation Parameters
 
-`IMAGE_GENERATOR=sd`（デフォルト）のときに有効です。
+Effective when `IMAGE_GENERATOR=sd` (default).
 
-| 環境変数 | デフォルト | 説明 |
-|---------|----------|------|
-| `IMGCHAT_SD_STEPS` | `28` | 生成ステップ数 |
-| `IMGCHAT_SD_WIDTH` | `512` | 画像の幅（px） |
-| `IMGCHAT_SD_HEIGHT` | `768` | 画像の高さ（px） |
-| `IMGCHAT_SD_CFG_SCALE` | `5.0` | CFG スケール |
-| `IMGCHAT_SD_SAMPLER_NAME` | `Euler a` | サンプラー名 |
-| `IMGCHAT_SD_EXTRA_PROMPT` | *(なし)* | 全画像に追加するプロンプト |
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `IMGCHAT_SD_STEPS` | `28` | Number of generation steps |
+| `IMGCHAT_SD_WIDTH` | `512` | Image width (px) |
+| `IMGCHAT_SD_HEIGHT` | `768` | Image height (px) |
+| `IMGCHAT_SD_CFG_SCALE` | `5.0` | CFG scale |
+| `IMGCHAT_SD_SAMPLER_NAME` | `Euler a` | Sampler name |
+| `IMGCHAT_SD_EXTRA_PROMPT` | *(none)* | Additional prompt appended to all images |
 
-## キャラクター設定
+## Character Configuration
 
-`characters` ディレクトリに `.md` ファイルを配置すると、生成される画像にキャラクターの外見や雰囲気を反映させることができます。複数のキャラクターファイルを配置でき、セッションごとに1つのキャラクターが自動的に選ばれます。
+Place `.md` files in the `characters` directory to reflect character appearance and atmosphere in the generated images. Multiple character files can be placed, and one character is automatically selected per session.
 
-### キャラクターファイルの配置（推奨）
+### Placing Character Files (Recommended)
 
-`characters/` ディレクトリに `.md` ファイルを作成します。
+Create `.md` files in the `characters/` directory.
 
 ```
 characters/
@@ -176,45 +178,45 @@ characters/
 └── chara2.md
 ```
 
-設定ファイルの例（`characters/chara1.md`）:
+Example configuration file (`characters/chara1.md`):
 
 ```markdown
-- 女子高校生(2年)
-- 身長: 165cm
-- 髪型: 黒髪ロング、前髪ぱっつん
-- 瞳の色: 深い茶色
-- 服装: 学校制服、ブレザー、赤いリボン、黒のチェック入りのプリーツスカート、黒ソックス
-- スタイル: スレンダー、落ち着いた清楚系
-- 話し方: 元気な話し方。丁寧語を使う
-- 場所: 学校の教室
+- High school girl (2nd year)
+- Height: 165cm
+- Hair: Long black hair, straight bangs
+- Eye color: Deep brown
+- Outfit: School uniform, blazer, red ribbon, black checkered pleated skirt, black socks
+- Style: Slender, calm and elegant
+- Speech: Energetic manner of speaking, uses polite language
+- Location: School classroom
 ```
 
-髪型、服装などの外見的特徴をなるべく細かく指定すると、画像ごとの雰囲気に統一感が出るのでおすすめです。場所も指定したほうがいいでしょう。
+We recommend specifying visual characteristics such as hairstyle and clothing in as much detail as possible to maintain a consistent look across images. Specifying the location is also recommended.
 
-ディレクトリは `CHARACTERS_DIR` 環境変数で変更できます（デフォルト: `characters`）。
+The directory can be changed with the `CHARACTERS_DIR` environment variable (default: `characters`).
 
-## トラブルシューティング
+## Troubleshooting
 
-### `GEMINI_API_KEY is required` と表示される
+### `GEMINI_API_KEY is required` is displayed
 
-`.env` ファイルに `GEMINI_API_KEY` が設定されているか確認してください。
+Check that `GEMINI_API_KEY` is set in the `.env` file.
 
-### 画像が生成されない
+### Images are not being generated
 
-- `DEBUG=1` で起動して詳細ログを確認してください。
-- **Stable Diffusion の場合**: WebUI が `--api` オプション付きで起動しているか、`SD_BASE_URL` が正しいか確認してください。
-- **Gemini の場合**: `IMAGE_GENERATOR=gemini` が設定されているか、`GEMINI_API_KEY` が正しいか確認してください。
+- Start with `DEBUG=1` to check detailed logs.
+- **For Stable Diffusion**: Verify that WebUI is started with the `--api` option and that `SD_BASE_URL` is correct.
+- **For Gemini**: Verify that `IMAGE_GENERATOR=gemini` is set and that `GEMINI_API_KEY` is correct.
 
-### 画像の生成間隔が長い
+### Image generation interval is too long
 
-- `.env` ファイル内で `GENERATE_INTERVAL` の値を指定できます。(単位は秒)
-- デフォルトは60秒ですが、高速に画像生成できる環境をお使いならもっと短い値でもいいかもしれません。
+- You can set the `GENERATE_INTERVAL` value in the `.env` file (in seconds).
+- The default is 60 seconds, but you may use a shorter value if your environment can generate images quickly.
 
-### ブラウザに画像が表示されない
+### Images are not displayed in the browser
 
-- Web UI (`http://localhost:8080`) が開けるか確認してください。
-- ブラウザの開発者ツールで WebSocket 接続エラーがないか確認してください。
+- Check that the Web UI (`http://localhost:8080`) is accessible.
+- Check the browser developer tools for WebSocket connection errors.
 
 ## TODO
 
-- Gemini 以外 (OpenAI, Anthropic, Grok...) も選択可能にする
+- Add support for providers other than Gemini (OpenAI, Anthropic, Grok, etc.)
