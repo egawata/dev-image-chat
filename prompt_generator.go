@@ -73,11 +73,23 @@ func (pg *PromptGenerator) buildSystemPrompt(characterIndex int) string {
 }
 
 func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
+
 	charIdx := pg.selectCharacterIndex(sessionPath)
 	systemPrompt := pg.buildSystemPrompt(charIdx)
 
-	if charIdx >= 0 {
-		Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
+	if debugEnabled {
+		if charIdx >= 0 {
+			Debugf("using character index %d for session %q", charIdx, filepath.Base(sessionPath))
+		}
+
+		if len(messages) > 0 {
+			lastMsg := messages[len(messages)-1]
+			preview := lastMsg.Content
+			if len(preview) > 200 {
+				preview = preview[:200] + "..."
+			}
+			Debugf("last message content (first 200 chars): %s", preview)
+		}
 	}
 
 	convJSON, err := json.Marshal(messages)
@@ -90,7 +102,7 @@ func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message, ses
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
 		Temperature:       genai.Ptr(float32(0.8)),
-		MaxOutputTokens:   1024,
+		MaxOutputTokens:   8192,
 	})
 	if err != nil {
 		return "", fmt.Errorf("Gemini API error: %w", err)
