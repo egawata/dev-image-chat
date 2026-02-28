@@ -15,7 +15,8 @@ This application can use the Gemini API for prompt generation and/or image gener
 - Depending on usage frequency, API costs may become significant. Please monitor your usage regularly.
     - Be especially careful when using Gemini for image generation, as costs tend to be high. For continuous use, we recommend setting up Stable Diffusion WebUI.
 - When using the free tier of the Gemini API, your conversation content may be used to improve Google products. If handling confidential information, we recommend using the paid tier API.
-- When using Ollama for prompt generation, Gemini API is only needed if you also use Gemini for image generation.
+
+By using Ollama for prompt generation and Stable Diffusion for image generation, everything runs locally with no API costs.
 
 ## Requirements
 
@@ -80,60 +81,24 @@ GEMINI_API_KEY=your-api-key-here
 ```
 
 If using Ollama for prompt generation, set the prompt generator:
+(Change `OLLAMA_MODEL` as appropriate)
 
 ```
 PROMPT_GENERATOR=ollama
+OLLAMA_MODEL=gemma3
 ```
 
 Other settings work with their default values, but can be changed as needed.
 
 ## Usage
 
-### With Gemini (Prompt Generator) + Gemini (Image Generator)
+### (Optional) Using Ollama for Prompt Generation
 
-Just set the following in `.env` and you're ready to go.
+Start Ollama.
 
-```
-GEMINI_API_KEY=your-api-key-here
-IMAGE_GENERATOR=gemini
-```
+### (Optional) Using Stable Diffusion for Image Generation
 
-```bash
-./dev-image-chat
-```
-
-### With Ollama (Prompt Generator) + Stable Diffusion (Image Generator)
-
-Start Ollama and pull a model (e.g., `gemma3`), then configure `.env`:
-
-```
-PROMPT_GENERATOR=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3
-IMAGE_GENERATOR=sd
-```
-
-No Gemini API key is needed in this configuration.
-
-```bash
-./dev-image-chat
-```
-
-### With Ollama (Prompt Generator) + Gemini (Image Generator)
-
-```
-PROMPT_GENERATOR=ollama
-GEMINI_API_KEY=your-api-key-here
-IMAGE_GENERATOR=gemini
-```
-
-```bash
-./dev-image-chat
-```
-
-### With Stable Diffusion Backend
-
-First, start Stable Diffusion WebUI with the API enabled.
+Start Stable Diffusion WebUI with the API enabled.
 
 ```bash
 # In the stable-diffusion-webui directory
@@ -142,7 +107,7 @@ First, start Stable Diffusion WebUI with the API enabled.
 
 By default, it starts at `http://localhost:7860`.
 
-Since `IMAGE_GENERATOR` defaults to `sd` in `.env`, you can start directly.
+### Start Dev Image Chat
 
 ```bash
 ./dev-image-chat
@@ -183,8 +148,6 @@ Settings can be configured via the `.env` file or environment variables.
 | `IMAGE_GENERATOR` | `sd` | Image generation backend (`sd` or `gemini`) |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API base URL (used when `PROMPT_GENERATOR=ollama`) |
-| `OLLAMA_MODEL` | `gemma3` | Ollama model name (used when `PROMPT_GENERATOR=ollama`) |
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI URL |
 | `SERVER_PORT` | `8080` | Web UI port number |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code projects directory |
@@ -192,6 +155,13 @@ Settings can be configured via the `.env` file or environment variables.
 | `CHARACTER_FILE` | *(none)* | Path to character configuration file (fallback when `CHARACTERS_DIR` is empty) |
 | `GENERATE_INTERVAL` | `60` | Minimum interval between image generations (seconds) |
 | `DEBUG` | `false` | Enable debug logging (`1` or `true`) |
+
+### Ollama Parameters
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API base URL (used when `PROMPT_GENERATOR=ollama`) |
+| `OLLAMA_MODEL` | `gemma3` | Ollama model name (used when `PROMPT_GENERATOR=ollama`) |
 
 ### Stable Diffusion Image Generation Parameters
 
@@ -259,6 +229,3 @@ This error appears when `PROMPT_GENERATOR=gemini` (default) or `IMAGE_GENERATOR=
 - Check that the Web UI (`http://localhost:8080`) is accessible.
 - Check the browser developer tools for WebSocket connection errors.
 
-## TODO
-
-- Add support for more image generation backends (OpenAI, Anthropic, Grok, etc.)

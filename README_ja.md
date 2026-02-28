@@ -15,7 +15,8 @@ Claude Code の Assistant が応答するたびに、会話の内容を読み取
 - 利用頻度によっては API 利用料金が高額になる可能性があります。利用状況をご自身で定期的にチェックしてください。
     - 特に画像生成を Gemini で行う場合は高額になりがちです。継続使用する場合は Stable Diffusion WebUI の導入を推奨します。
 - 無料枠の Gemini API を利用する場合、会話の内容が Google プロダクトの改善に使用される場合があります。機密情報を扱う場合は有料枠 API の使用を推奨します。
-- プロンプト生成に Ollama を使用する場合、画像生成にも Gemini を使わなければ Gemini API キーは不要です。
+
+プロンプト生成に Ollama, 画像生成に Stable Diffusion を使用すればローカル環境で完結し、料金もかかりません。
 
 ## 必要なもの
 
@@ -80,60 +81,24 @@ GEMINI_API_KEY=your-api-key-here
 ```
 
 Ollama をプロンプト生成に使う場合は、プロンプトジェネレータを設定します:
+(`OLLAMA_MODEL` は適宜書き換えてください)
 
 ```
 PROMPT_GENERATOR=ollama
+OLLAMA_MODEL=gemma3
 ```
 
 その他の設定はデフォルト値のままで動作しますが、必要に応じて変更できます。
 
 ## 起動方法
 
-### Gemini（プロンプト生成）+ Gemini（画像生成）の場合
+### (Optional) Ollama をプロンプト生成に使用する場合
 
-`.env` に以下を設定するだけで、すぐに使えます。
+Ollama を起動してください。
 
-```
-GEMINI_API_KEY=your-api-key-here
-IMAGE_GENERATOR=gemini
-```
+### (Optional) Stable Diffusion を画像生成に使用する場合
 
-```bash
-./dev-image-chat
-```
-
-### Ollama（プロンプト生成）+ Stable Diffusion（画像生成）の場合
-
-Ollama を起動してモデルをダウンロード（例: `gemma3`）した後、`.env` を設定します:
-
-```
-PROMPT_GENERATOR=ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=gemma3
-IMAGE_GENERATOR=sd
-```
-
-この構成では Gemini API キーは不要です。
-
-```bash
-./dev-image-chat
-```
-
-### Ollama（プロンプト生成）+ Gemini（画像生成）の場合
-
-```
-PROMPT_GENERATOR=ollama
-GEMINI_API_KEY=your-api-key-here
-IMAGE_GENERATOR=gemini
-```
-
-```bash
-./dev-image-chat
-```
-
-### Stable Diffusion バックエンドの場合
-
-まず Stable Diffusion WebUI を API 有効の状態で起動してください。
+Stable Diffusion WebUI を API 有効の状態で起動してください。
 
 ```bash
 # stable-diffusion-webui のディレクトリで
@@ -142,7 +107,7 @@ IMAGE_GENERATOR=gemini
 
 デフォルトで `http://localhost:7860` で起動します。
 
-`.env` の `IMAGE_GENERATOR` はデフォルトで `sd` なので、そのまま起動できます。
+### Dev Image Chat 起動
 
 ```bash
 ./dev-image-chat
@@ -183,8 +148,6 @@ Claude Code Image Chat started
 | `IMAGE_GENERATOR` | `sd` | 画像生成バックエンド（`sd` or `gemini`） |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API のベース URL（`PROMPT_GENERATOR=ollama` 時に使用） |
-| `OLLAMA_MODEL` | `gemma3` | Ollama のモデル名（`PROMPT_GENERATOR=ollama` 時に使用） |
 | `SD_BASE_URL` | `http://localhost:7860` | Stable Diffusion WebUI の URL |
 | `SERVER_PORT` | `8080` | Web UI のポート番号 |
 | `CLAUDE_PROJECTS_DIR` | `~/.claude/projects` | Claude Code のプロジェクトディレクトリ |
@@ -192,6 +155,11 @@ Claude Code Image Chat started
 | `CHARACTER_FILE` | *(なし)* | キャラクター設定ファイルのパス（`CHARACTERS_DIR` が空の場合のフォールバック） |
 | `GENERATE_INTERVAL` | `60` | 画像生成の最小間隔（秒） |
 | `DEBUG` | `false` | デバッグログの有効化（`1` or `true`） |
+
+### Ollama 関連パラメータ
+
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API のベース URL（`PROMPT_GENERATOR=ollama` 時に使用） |
+| `OLLAMA_MODEL` | `gemma3` | Ollama のモデル名（`PROMPT_GENERATOR=ollama` 時に使用） |
 
 ### Stable Diffusion 画像生成パラメータ
 
@@ -258,7 +226,3 @@ characters/
 
 - Web UI (`http://localhost:8080`) が開けるか確認してください。
 - ブラウザの開発者ツールで WebSocket 接続エラーがないか確認してください。
-
-## TODO
-
-- 画像生成バックエンドの追加対応 (OpenAI, Anthropic, Grok...)
