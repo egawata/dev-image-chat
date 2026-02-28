@@ -148,6 +148,8 @@ Settings can be configured via the `.env` file or environment variables.
 
 ### Gemini Parameters
 
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
 | `GEMINI_API_KEY` | *(none)* | Google Gemini API key (required when `PROMPT_GENERATOR=gemini` or `IMAGE_GENERATOR=gemini`) |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model used for prompt generation (used when `PROMPT_GENERATOR=gemini`) |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini image generation model (used when `IMAGE_GENERATOR=gemini`) |

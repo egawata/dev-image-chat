@@ -148,12 +148,16 @@ Claude Code Image Chat started
 
 ### Gemini 関連パラメータ
 
+| 環境変数 | デフォルト | 説明 |
+|---------|----------|------|
 | `GEMINI_API_KEY` | *(なし)* | Google Gemini API キー（`PROMPT_GENERATOR=gemini` または `IMAGE_GENERATOR=gemini` のとき必要） |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | プロンプト生成に使用する Gemini モデル（`PROMPT_GENERATOR=gemini` 時に使用） |
 | `GEMINI_IMAGE_MODEL` | `gemini-2.5-flash-image` | Gemini 画像生成モデル（`IMAGE_GENERATOR=gemini` 時に使用） |
 
 ### Ollama 関連パラメータ
 
+| 環境変数 | デフォルト | 説明 |
+|---------|----------|------|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API のベース URL（`PROMPT_GENERATOR=ollama` 時に使用） |
 | `OLLAMA_MODEL` | `gemma3` | Ollama のモデル名（`PROMPT_GENERATOR=ollama` 時に使用） |
 
