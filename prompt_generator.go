@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"log"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"google.golang.org/genai"
@@ -84,10 +85,11 @@ func (pg *PromptGenerator) Generate(ctx context.Context, messages []Message, ses
 
 		if len(messages) > 0 {
 			lastMsg := messages[len(messages)-1]
-			preview := lastMsg.Content
-			if len(preview) > 200 {
-				preview = preview[:200] + "..."
+			runes := []rune(lastMsg.Content)
+			if len(runes) > 200 {
+				runes = runes[:200]
 			}
+			preview := strconv.Quote(string(runes))
 			Debugf("last message content (first 200 chars): %s", preview)
 		}
 	}
