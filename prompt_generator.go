@@ -59,6 +59,9 @@ func (b *promptGeneratorBase) buildSystemPrompt(characterIndex int) string {
 	return sp
 }
 
+// max length of last message printed to log
+const maxLastMsgLen = 200
+
 // logDebugInfo logs character index and last message preview when debug mode is enabled.
 func (b *promptGeneratorBase) logDebugInfo(sessionPath string, charIdx int, messages []Message) {
 	if !debugEnabled {
@@ -72,11 +75,11 @@ func (b *promptGeneratorBase) logDebugInfo(sessionPath string, charIdx int, mess
 	if len(messages) > 0 {
 		lastMsg := messages[len(messages)-1]
 		runes := []rune(lastMsg.Content)
-		if len(runes) > 200 {
-			runes = runes[:200]
+		if len(runes) > maxLastMsgLen {
+			runes = runes[:maxLastMsgLen]
 		}
 		preview := strconv.Quote(string(runes))
-		Debugf("last message content (first 200 chars): %s", preview)
+		Debugf("last message content (first %d chars): %s", maxLastMsgLen, preview)
 	}
 }
 
@@ -114,6 +117,11 @@ func NewGeminiPromptGenerator(apiKey, model string, characterSettings []string) 
 	}, nil
 }
 
+const (
+	geminiTemperature     = 0.8
+	geminiMaxOutputTokens = 8192
+)
+
 func (pg *GeminiPromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
 
 	charIdx := pg.selectCharacterIndex(sessionPath)
@@ -127,8 +135,8 @@ func (pg *GeminiPromptGenerator) Generate(ctx context.Context, messages []Messag
 
 	resp, err := pg.client.Models.GenerateContent(ctx, pg.model, genai.Text(userPrompt), &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
-		Temperature:       genai.Ptr(float32(0.8)),
-		MaxOutputTokens:   8192,
+		Temperature:       genai.Ptr(float32(geminiTemperature)),
+		MaxOutputTokens:   geminiMaxOutputTokens,
 	})
 	if err != nil {
 		return "", fmt.Errorf("Gemini API error: %w", err)
