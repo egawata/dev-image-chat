@@ -148,5 +148,5 @@ func (pg *OllamaPromptGenerator) Generate(ctx context.Context, messages []Messag
 		return "", fmt.Errorf("empty response from ollama")
 	}
 
-	return text, nil
+	return extractPromptFromResponse(text), nil
 }

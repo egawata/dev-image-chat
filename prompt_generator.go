@@ -7,6 +7,7 @@ import (
 	"hash/fnv"
 	"log"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -18,9 +19,13 @@ Given a conversation between a user and an AI assistant, generate a short Englis
 describing an anime-style illustration that captures the mood and situation of the latest
 assistant message.
 
-Rules:
-- Output ONLY the image prompt, nothing else.
-- The entire output MUST be in English only. Do NOT include any non-English characters, words, or text (no Japanese, Chinese, Korean, etc.). Even for in-scene text like signs, speech bubbles, or whiteboards, describe them in English or omit them.
+You MUST respond with a JSON object in the following format and nothing else:
+{"prompt": "<your image prompt here>"}
+
+Do NOT include any text outside the JSON object. No explanations, no markdown, no commentary.
+
+Rules for the prompt value inside the JSON:
+- The entire prompt MUST be in English only. Do NOT include any non-English characters, words, or text (no Japanese, Chinese, Korean, etc.). Even for in-scene text like signs, speech bubbles, or whiteboards, describe them in English or omit them.
 - The prompt should describe a single anime girl character reacting to or representing
   the situation in the conversation.
 - Include emotional expressions, poses, and background elements that match the context.
@@ -89,7 +94,40 @@ func (b *promptGeneratorBase) buildUserPrompt(messages []Message) (string, error
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal messages: %w", err)
 	}
-	return fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation.", string(convJSON)), nil
+	return fmt.Sprintf("Here is the recent conversation:\n%s\n\nGenerate an anime-style image prompt based on this conversation. Respond with ONLY a JSON object: {\"prompt\": \"<your prompt>\"}", string(convJSON)), nil
+}
+
+// promptResponse represents the expected JSON response from the LLM.
+type promptResponse struct {
+	Prompt string `json:"prompt"`
+}
+
+// jsonObjectPattern matches a JSON object containing a "prompt" key.
+var jsonObjectPattern = regexp.MustCompile(`\{[^{}]*"prompt"\s*:\s*"[^"]*(?:\\.[^"]*)*"[^{}]*\}`)
+
+// extractPromptFromResponse attempts to extract the image prompt from the LLM response.
+// It first tries to parse the entire response as JSON. If that fails, it searches
+// for a JSON object within the response text. If no JSON is found, it returns
+// the original text as a fallback.
+func extractPromptFromResponse(text string) string {
+	text = strings.TrimSpace(text)
+
+	// Try parsing the whole response as JSON
+	var resp promptResponse
+	if err := json.Unmarshal([]byte(text), &resp); err == nil && resp.Prompt != "" {
+		return strings.TrimSpace(resp.Prompt)
+	}
+
+	// Try to find a JSON object embedded in the response
+	if match := jsonObjectPattern.FindString(text); match != "" {
+		if err := json.Unmarshal([]byte(match), &resp); err == nil && resp.Prompt != "" {
+			return strings.TrimSpace(resp.Prompt)
+		}
+	}
+
+	// Fallback: return original text (best effort)
+	log.Printf("warning: LLM response was not valid JSON, using raw text")
+	return text
 }
 
 // GeminiPromptGenerator generates prompts using the Gemini API.
@@ -154,7 +192,7 @@ func (pg *GeminiPromptGenerator) Generate(ctx context.Context, messages []Messag
 		return "", fmt.Errorf("empty response from Gemini")
 	}
 
-	return strings.TrimSpace(text), nil
+	return extractPromptFromResponse(text), nil
 }
 
 func extractTextFromResponse(resp *genai.GenerateContentResponse) string {
