@@ -86,7 +86,7 @@ func cleanupOldImages(outputDir string, maxImages int) {
 
 // SDImageGenerator generates images using the Stable Diffusion WebUI API.
 type SDImageGenerator struct {
-	baseURL     string
+	cfg         *Config
 	outputDir   string
 	maxImages   int
 	steps       int
@@ -115,7 +115,7 @@ type txt2imgResponse struct {
 }
 
 type SDImageGeneratorConfig struct {
-	BaseURL     string
+	Cfg         *Config
 	OutputDir   string
 	Steps       int
 	Width       int
@@ -131,7 +131,7 @@ func NewSDImageGenerator(igCfg SDImageGeneratorConfig) (*SDImageGenerator, error
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 	return &SDImageGenerator{
-		baseURL:     igCfg.BaseURL,
+		cfg:         igCfg.Cfg,
 		outputDir:   igCfg.OutputDir,
 		maxImages:   defaultMaxImages,
 		steps:       igCfg.Steps,
@@ -147,7 +147,7 @@ func NewSDImageGenerator(igCfg SDImageGeneratorConfig) (*SDImageGenerator, error
 // CheckConnection verifies that the Stable Diffusion WebUI server is reachable.
 // It returns nil on success, or an error describing what went wrong.
 func (ig *SDImageGenerator) CheckConnection(ctx context.Context) error {
-	url := strings.TrimRight(ig.baseURL, "/") + "/sdapi/v1/samplers"
+	url := strings.TrimRight(ig.cfg.GetSDBaseURL(), "/") + "/sdapi/v1/samplers"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -155,7 +155,7 @@ func (ig *SDImageGenerator) CheckConnection(ctx context.Context) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("cannot connect to Stable Diffusion at %s: %w", ig.baseURL, err)
+		return fmt.Errorf("cannot connect to Stable Diffusion at %s: %w", ig.cfg.GetSDBaseURL(), err)
 	}
 	defer resp.Body.Close()
 
@@ -210,7 +210,7 @@ func (ig *SDImageGenerator) Generate(prompt string) (string, error) {
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := ig.baseURL + "/sdapi/v1/txt2img"
+	url := ig.cfg.GetSDBaseURL() + "/sdapi/v1/txt2img"
 	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("Stable Diffusion API error: %w", err)

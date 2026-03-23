@@ -80,22 +80,27 @@ func (c *Config) SetRuntimeConfig(rc RuntimeConfig) error {
 	if rc.GenerateInterval < 1 {
 		return fmt.Errorf("generate_interval must be a positive integer, got %d", rc.GenerateInterval)
 	}
-	if rc.OllamaModel == "" {
-		return fmt.Errorf("ollama_model must not be empty")
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.PromptGeneratorType == "ollama" && rc.OllamaModel == "" {
+		return fmt.Errorf("ollama_model must not be empty when prompt generator is \"ollama\"")
 	}
-	if rc.ImageGeneratorType == "gemini" && rc.GeminiImageModel == "" {
+	if rc.ImageGeneratorType == "gemini" && rc.GeminiImageModel == "" && c.GeminiImageModel == "" {
 		return fmt.Errorf("gemini_image_model must not be empty when image generator is \"gemini\"")
 	}
-	if rc.ImageGeneratorType == "sd" && rc.SDBaseURL == "" {
+	if rc.ImageGeneratorType == "sd" && rc.SDBaseURL == "" && c.SDBaseURL == "" {
 		return fmt.Errorf("sd_base_url must not be empty when image generator is \"sd\"")
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	c.OllamaModel = rc.OllamaModel
 	c.ImageGeneratorType = rc.ImageGeneratorType
-	c.GeminiImageModel = rc.GeminiImageModel
-	c.SDBaseURL = rc.SDBaseURL
+	if rc.GeminiImageModel != "" {
+		c.GeminiImageModel = rc.GeminiImageModel
+	}
+	if rc.SDBaseURL != "" {
+		c.SDBaseURL = rc.SDBaseURL
+	}
 	c.GenerateInterval = time.Duration(rc.GenerateInterval) * time.Second
 	return nil
 }
@@ -119,6 +124,20 @@ func (c *Config) GetOllamaModel() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.OllamaModel
+}
+
+// GetSDBaseURL returns the current Stable Diffusion base URL.
+func (c *Config) GetSDBaseURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.SDBaseURL
+}
+
+// GetGeminiImageModel returns the current Gemini image model name.
+func (c *Config) GetGeminiImageModel() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.GeminiImageModel
 }
 
 func LoadConfig() (*Config, error) {

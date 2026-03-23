@@ -164,7 +164,9 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		var rc RuntimeConfig
 		if err := json.NewDecoder(r.Body).Decode(&rc); err != nil {
-			http.Error(w, `{"error":"invalid JSON"}`, http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON"})
 			return
 		}
 		if err := s.cfg.SetRuntimeConfig(rc); err != nil {

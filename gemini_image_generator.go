@@ -13,7 +13,7 @@ import (
 // GeminiImageGenerator generates images using the Gemini API.
 type GeminiImageGenerator struct {
 	client    *genai.Client
-	model     string
+	cfg       *Config
 	outputDir string
 	maxImages int
 	mu        sync.Mutex
@@ -22,27 +22,27 @@ type GeminiImageGenerator struct {
 
 type GeminiImageGeneratorConfig struct {
 	APIKey    string
-	Model     string
+	Cfg       *Config
 	OutputDir string
 }
 
-func NewGeminiImageGenerator(cfg GeminiImageGeneratorConfig) (*GeminiImageGenerator, error) {
+func NewGeminiImageGenerator(igCfg GeminiImageGeneratorConfig) (*GeminiImageGenerator, error) {
 	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
-		APIKey:  cfg.APIKey,
+		APIKey:  igCfg.APIKey,
 		Backend: genai.BackendGeminiAPI,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
+	if err := os.MkdirAll(igCfg.OutputDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	return &GeminiImageGenerator{
 		client:    client,
-		model:     cfg.Model,
-		outputDir: cfg.OutputDir,
+		cfg:       igCfg.Cfg,
+		outputDir: igCfg.OutputDir,
 		maxImages: defaultMaxImages,
 	}, nil
 }
@@ -67,7 +67,7 @@ func (g *GeminiImageGenerator) Generate(prompt string) (string, error) {
 	}()
 
 	ctx := context.Background()
-	resp, err := g.client.Models.GenerateContent(ctx, g.model, genai.Text(prompt), &genai.GenerateContentConfig{
+	resp, err := g.client.Models.GenerateContent(ctx, g.cfg.GetGeminiImageModel(), genai.Text(prompt), &genai.GenerateContentConfig{
 		ResponseModalities: []string{"IMAGE"},
 		ImageConfig: &genai.ImageConfig{
 			AspectRatio: "3:4",

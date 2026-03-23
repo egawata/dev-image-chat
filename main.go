@@ -42,7 +42,7 @@ func main() {
 	imageGenerators := make(map[string]ImageGenerator)
 
 	sdGen, sdErr := NewSDImageGenerator(SDImageGeneratorConfig{
-		BaseURL:        cfg.SDBaseURL,
+		Cfg:            cfg,
 		OutputDir:      imageDir,
 		Steps:          cfg.SDSteps,
 		Width:          cfg.SDWidth,
@@ -72,7 +72,7 @@ func main() {
 
 	geminiImgGen, geminiErr := NewGeminiImageGenerator(GeminiImageGeneratorConfig{
 		APIKey:    cfg.GeminiAPIKey,
-		Model:     cfg.GeminiImageModel,
+		Cfg:       cfg,
 		OutputDir: imageDir,
 	})
 	if geminiErr != nil {

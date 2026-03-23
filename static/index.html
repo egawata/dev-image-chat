@@ -613,7 +613,7 @@
                 image_generator: document.getElementById('cfg-image-generator').value,
                 gemini_image_model: document.getElementById('cfg-gemini-image-model').value,
                 sd_base_url: document.getElementById('cfg-sd-base-url').value,
-                generate_interval: parseInt(document.getElementById('cfg-generate-interval').value, 10) || 60,
+                generate_interval: parseInt(document.getElementById('cfg-generate-interval').value, 10),
             };
             try {
                 const resp = await fetch('/api/config', {
