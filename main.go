@@ -22,7 +22,7 @@ func main() {
 	var promptGen PromptGenerator
 	switch cfg.PromptGeneratorType {
 	case "ollama":
-		ollamaGen := NewOllamaPromptGenerator(cfg.OllamaBaseURL, cfg.OllamaModel, cfg.CharacterSettings)
+		ollamaGen := NewOllamaPromptGenerator(cfg.OllamaBaseURL, cfg, cfg.CharacterSettings)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		if err := ollamaGen.CheckConnection(ctx); err != nil {
 			log.Println("*******************************")
@@ -38,27 +38,28 @@ func main() {
 		}
 	}
 
-	var imageGen ImageGenerator
-	switch cfg.ImageGeneratorType {
-	case "gemini":
-		imageGen, err = NewGeminiImageGenerator(GeminiImageGeneratorConfig{
-			APIKey:    cfg.GeminiAPIKey,
-			Model:     cfg.GeminiImageModel,
-			OutputDir: imageDir,
-		})
-	default:
-		sdGen, sdErr := NewSDImageGenerator(SDImageGeneratorConfig{
-			BaseURL:     cfg.SDBaseURL,
-			OutputDir:   imageDir,
-			Steps:       cfg.SDSteps,
-			Width:       cfg.SDWidth,
-			Height:      cfg.SDHeight,
-			CfgScale:    cfg.SDCfgScale,
-			SamplerName: cfg.SDSamplerName,
-			ExtraPrompt:    cfg.SDExtraPrompt,
-			ExtraNegPrompt: cfg.SDExtraNegPrompt,
-		})
-		if sdErr == nil {
+	// Create both image generators upfront so we can switch at runtime.
+	imageGenerators := make(map[string]ImageGenerator)
+
+	sdGen, sdErr := NewSDImageGenerator(SDImageGeneratorConfig{
+		Cfg:            cfg,
+		OutputDir:      imageDir,
+		Steps:          cfg.SDSteps,
+		Width:          cfg.SDWidth,
+		Height:         cfg.SDHeight,
+		CfgScale:       cfg.SDCfgScale,
+		SamplerName:    cfg.SDSamplerName,
+		ExtraPrompt:    cfg.SDExtraPrompt,
+		ExtraNegPrompt: cfg.SDExtraNegPrompt,
+	})
+	if sdErr != nil {
+		if cfg.ImageGeneratorType == "sd" {
+			log.Fatalf("image generator error: %v", sdErr)
+		}
+		log.Printf("warning: could not initialize SD image generator: %v", sdErr)
+	} else {
+		imageGenerators["sd"] = sdGen
+		if cfg.ImageGeneratorType == "sd" {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			if connErr := sdGen.CheckConnection(ctx); connErr != nil {
 				log.Println("*******************************")
@@ -67,17 +68,27 @@ func main() {
 			}
 			cancel()
 		}
-		imageGen, err = sdGen, sdErr
 	}
-	if err != nil {
-		log.Fatalf("image generator error: %v", err)
+
+	geminiImgGen, geminiErr := NewGeminiImageGenerator(GeminiImageGeneratorConfig{
+		APIKey:    cfg.GeminiAPIKey,
+		Cfg:       cfg,
+		OutputDir: imageDir,
+	})
+	if geminiErr != nil {
+		if cfg.ImageGeneratorType == "gemini" {
+			log.Fatalf("image generator error: %v", geminiErr)
+		}
+		log.Printf("warning: could not initialize Gemini image generator: %v", geminiErr)
+	} else {
+		imageGenerators["gemini"] = geminiImgGen
 	}
 
 	InitLogger(cfg.Debug)
 
 	done := make(chan struct{})
 
-	srv := NewServer(cfg.ServerPort, imageDir, done)
+	srv := NewServer(cfg.ServerPort, imageDir, cfg, done)
 
 	watcher := NewWatcher(cfg.ClaudeProjectDir, cfg.DebounceInterval)
 
@@ -213,7 +224,8 @@ func main() {
 				}
 
 				now := time.Now()
-				if now.Sub(lastGenTime) >= cfg.GenerateInterval {
+				genInterval := cfg.GetGenerateInterval()
+				if now.Sub(lastGenTime) >= genInterval {
 					// Enough time has passed — generate immediately
 					if deferredTimer != nil {
 						deferredTimer.Stop()
@@ -232,7 +244,7 @@ func main() {
 					if deferredTimer != nil {
 						deferredTimer.Stop()
 					}
-					remaining := cfg.GenerateInterval - now.Sub(lastGenTime)
+					remaining := genInterval - now.Sub(lastGenTime)
 					Debugf("deferring generation (%.0fs remaining)", remaining.Seconds())
 					deferredTimer = time.AfterFunc(remaining, func() {
 						select {
@@ -259,6 +271,15 @@ func main() {
 				if !ok {
 					return
 				}
+
+				// Select the image generator based on current config
+				genType := cfg.GetImageGeneratorType()
+				imageGen, exists := imageGenerators[genType]
+				if !exists {
+					log.Printf("image generator %q not available, skipping", genType)
+					continue
+				}
+
 				filename, err := imageGen.Generate(ps.Prompt)
 				if err != nil {
 					log.Printf("image generation error: %v", err)

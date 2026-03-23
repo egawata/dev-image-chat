@@ -14,7 +14,7 @@ import (
 type OllamaPromptGenerator struct {
 	promptGeneratorBase
 	baseURL     string
-	model       string
+	cfg         *Config
 	temperature float64
 }
 
@@ -38,13 +38,13 @@ type ollamaChatResponse struct {
 	Message ollamaChatMessage `json:"message"`
 }
 
-func NewOllamaPromptGenerator(baseURL, model string, characterSettings []string) *OllamaPromptGenerator {
+func NewOllamaPromptGenerator(baseURL string, cfg *Config, characterSettings []string) *OllamaPromptGenerator {
 	return &OllamaPromptGenerator{
 		promptGeneratorBase: promptGeneratorBase{
 			characterSettings: characterSettings,
 		},
 		baseURL:     baseURL,
-		model:       model,
+		cfg:         cfg,
 		temperature: 0.8,
 	}
 }
@@ -83,7 +83,7 @@ func (pg *OllamaPromptGenerator) CheckConnection(ctx context.Context) error {
 		// Model names may include a tag (e.g. "gemma3:latest"), so match
 		// both exact name and name without tag.
 		name := strings.Split(m.Name, ":")[0]
-		if m.Name == pg.model || name == pg.model {
+		if m.Name == pg.cfg.GetOllamaModel() || name == pg.cfg.GetOllamaModel() {
 			return nil
 		}
 	}
@@ -92,7 +92,7 @@ func (pg *OllamaPromptGenerator) CheckConnection(ctx context.Context) error {
 	for i, m := range result.Models {
 		available[i] = m.Name
 	}
-	return fmt.Errorf("model %q not found in Ollama (available: %s)", pg.model, strings.Join(available, ", "))
+	return fmt.Errorf("model %q not found in Ollama (available: %s)", pg.cfg.GetOllamaModel(), strings.Join(available, ", "))
 }
 
 func (pg *OllamaPromptGenerator) Generate(ctx context.Context, messages []Message, sessionPath string) (string, error) {
@@ -106,7 +106,7 @@ func (pg *OllamaPromptGenerator) Generate(ctx context.Context, messages []Messag
 	}
 
 	reqBody := ollamaChatRequest{
-		Model: pg.model,
+		Model: pg.cfg.GetOllamaModel(),
 		Messages: []ollamaChatMessage{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
