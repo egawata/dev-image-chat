@@ -83,11 +83,11 @@ func (c *Config) SetRuntimeConfig(rc RuntimeConfig) error {
 	if rc.OllamaModel == "" {
 		return fmt.Errorf("ollama_model must not be empty")
 	}
-	if rc.GeminiImageModel == "" {
-		return fmt.Errorf("gemini_image_model must not be empty")
+	if rc.ImageGeneratorType == "gemini" && rc.GeminiImageModel == "" {
+		return fmt.Errorf("gemini_image_model must not be empty when image generator is \"gemini\"")
 	}
-	if rc.SDBaseURL == "" {
-		return fmt.Errorf("sd_base_url must not be empty")
+	if rc.ImageGeneratorType == "sd" && rc.SDBaseURL == "" {
+		return fmt.Errorf("sd_base_url must not be empty when image generator is \"sd\"")
 	}
 
 	c.mu.Lock()
