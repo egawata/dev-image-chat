@@ -200,6 +200,111 @@
         #session-table tr.flash {
             animation: rowFlash 1s ease-out;
         }
+
+        /* Settings button */
+        #btn-settings {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 32px;
+            cursor: pointer;
+            padding: 2px 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        #btn-settings:hover {
+            color: #e0e0e0;
+        }
+
+        /* Settings dialog */
+        #settings-dialog {
+            background: #16213e;
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 480px;
+            width: 90vw;
+        }
+        #settings-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.6);
+        }
+        #settings-dialog h2 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .settings-field {
+            margin-bottom: 12px;
+        }
+        .settings-field label {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .settings-field input,
+        .settings-field select {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .settings-field input:focus,
+        .settings-field select:focus {
+            outline: none;
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+        .settings-field select option {
+            background: #16213e;
+            color: #e0e0e0;
+        }
+        .settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .settings-actions button {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+        #btn-settings-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        #btn-settings-cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #btn-settings-save {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81c784;
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        #btn-settings-save:hover {
+            background: rgba(76, 175, 80, 0.5);
+        }
+        #settings-message {
+            font-size: 12px;
+            margin-top: 8px;
+            min-height: 16px;
+        }
+        #settings-message.error {
+            color: #e57373;
+        }
+        #settings-message.success {
+            color: #81c784;
+        }
     </style>
 </head>
 <body>
@@ -219,6 +324,7 @@
             <div class="panel-header-right">
                 <button id="btn-show-all" class="hidden" onclick="switchToShared()">Show All</button>
                 <span id="status" class="disconnected">Disconnected</span>
+                <button id="btn-settings" onclick="openSettings()" title="Settings">⚙</button>
                 <button id="toggle-sessions" onclick="toggleSessionPanel()" title="Toggle session list">▼</button>
             </div>
         </div>
@@ -234,6 +340,38 @@
             <tbody id="session-tbody"></tbody>
         </table>
     </div>
+
+    <dialog id="settings-dialog">
+        <h2>Settings</h2>
+        <div class="settings-field">
+            <label for="cfg-ollama-model">Ollama Model</label>
+            <input type="text" id="cfg-ollama-model">
+        </div>
+        <div class="settings-field">
+            <label for="cfg-image-generator">Image Generator</label>
+            <select id="cfg-image-generator">
+                <option value="sd">Stable Diffusion</option>
+                <option value="gemini">Gemini</option>
+            </select>
+        </div>
+        <div class="settings-field">
+            <label for="cfg-gemini-image-model">Gemini Image Model</label>
+            <input type="text" id="cfg-gemini-image-model">
+        </div>
+        <div class="settings-field">
+            <label for="cfg-sd-base-url">SD Base URL</label>
+            <input type="text" id="cfg-sd-base-url">
+        </div>
+        <div class="settings-field">
+            <label for="cfg-generate-interval">Generate Interval (seconds)</label>
+            <input type="number" id="cfg-generate-interval" min="1">
+        </div>
+        <div id="settings-message"></div>
+        <div class="settings-actions">
+            <button id="btn-settings-cancel" onclick="closeSettings()">Cancel</button>
+            <button id="btn-settings-save" onclick="saveSettings()">Save</button>
+        </div>
+    </dialog>
 
     <script>
         const statusEl = document.getElementById('status');
@@ -440,6 +578,68 @@
                 }, 3000);
             }
         }
+
+        // Settings dialog
+        const settingsDialog = document.getElementById('settings-dialog');
+        const settingsMsg = document.getElementById('settings-message');
+
+        async function openSettings() {
+            settingsMsg.textContent = '';
+            settingsMsg.className = '';
+            try {
+                const resp = await fetch('/api/config');
+                const cfg = await resp.json();
+                document.getElementById('cfg-ollama-model').value = cfg.ollama_model || '';
+                document.getElementById('cfg-image-generator').value = cfg.image_generator || 'sd';
+                document.getElementById('cfg-gemini-image-model').value = cfg.gemini_image_model || '';
+                document.getElementById('cfg-sd-base-url').value = cfg.sd_base_url || '';
+                document.getElementById('cfg-generate-interval').value = cfg.generate_interval || 60;
+            } catch (e) {
+                settingsMsg.textContent = 'Failed to load settings';
+                settingsMsg.className = 'error';
+            }
+            settingsDialog.showModal();
+        }
+
+        function closeSettings() {
+            settingsDialog.close();
+        }
+
+        async function saveSettings() {
+            settingsMsg.textContent = '';
+            settingsMsg.className = '';
+            const body = {
+                ollama_model: document.getElementById('cfg-ollama-model').value,
+                image_generator: document.getElementById('cfg-image-generator').value,
+                gemini_image_model: document.getElementById('cfg-gemini-image-model').value,
+                sd_base_url: document.getElementById('cfg-sd-base-url').value,
+                generate_interval: parseInt(document.getElementById('cfg-generate-interval').value, 10) || 60,
+            };
+            try {
+                const resp = await fetch('/api/config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const result = await resp.json();
+                if (!resp.ok) {
+                    settingsMsg.textContent = result.error || 'Failed to save';
+                    settingsMsg.className = 'error';
+                    return;
+                }
+                settingsMsg.textContent = 'Settings saved!';
+                settingsMsg.className = 'success';
+                setTimeout(() => settingsDialog.close(), 800);
+            } catch (e) {
+                settingsMsg.textContent = 'Failed to save settings';
+                settingsMsg.className = 'error';
+            }
+        }
+
+        // Close dialog on backdrop click
+        settingsDialog.addEventListener('click', (e) => {
+            if (e.target === settingsDialog) settingsDialog.close();
+        });
 
         connect();
     </script>

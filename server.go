@@ -22,15 +22,17 @@ var upgrader = websocket.Upgrader{
 type Server struct {
 	port     string
 	imageDir string
+	cfg      *Config
 	clients  map[*websocket.Conn]struct{}
 	mu       sync.RWMutex
 	done     <-chan struct{}
 }
 
-func NewServer(port, imageDir string, done <-chan struct{}) *Server {
+func NewServer(port, imageDir string, cfg *Config, done <-chan struct{}) *Server {
 	return &Server{
 		port:     port,
 		imageDir: imageDir,
+		cfg:      cfg,
 		clients:  make(map[*websocket.Conn]struct{}),
 		done:     done,
 	}
@@ -92,6 +94,9 @@ func (s *Server) Start() error {
 	// WebSocket endpoint
 	mux.HandleFunc("/ws", s.handleWS)
 
+	// Config API endpoints
+	mux.HandleFunc("/api/config", s.handleConfig)
+
 	httpServer := &http.Server{
 		Addr:    ":" + s.port,
 		Handler: mux,
@@ -146,5 +151,33 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			break
 		}
+	}
+}
+
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		rc := s.cfg.GetRuntimeConfig()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rc)
+
+	case http.MethodPut:
+		var rc RuntimeConfig
+		if err := json.NewDecoder(r.Body).Decode(&rc); err != nil {
+			http.Error(w, `{"error":"invalid JSON"}`, http.StatusBadRequest)
+			return
+		}
+		if err := s.cfg.SetRuntimeConfig(rc); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		log.Printf("runtime config updated: %+v", rc)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(s.cfg.GetRuntimeConfig())
+
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
